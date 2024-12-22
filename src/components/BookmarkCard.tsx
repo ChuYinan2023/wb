@@ -3,6 +3,11 @@ import { ExternalLink, Tag, Trash2, Globe } from 'lucide-react';
 import { Bookmark } from '../types';
 import { getRelativeTime } from '../utils/dateUtils';
 
+console.log('测试无效日期:', getRelativeTime('invalid date'));
+console.log('测试当前日期:', getRelativeTime(new Date()));
+console.log('测试字符串日期:', getRelativeTime('2024-01-01T00:00:00'));
+console.log('测试过去日期:', getRelativeTime(new Date('2023-01-01')));
+
 interface BookmarkCardProps {
   bookmark: Bookmark;
   viewMode: 'grid' | 'list' | 'masonry';
@@ -87,7 +92,7 @@ export function BookmarkCard({ bookmark, viewMode, onDelete }: BookmarkCardProps
         </div>
       </div>
       <div className={`text-sm text-gray-500 ${viewMode === 'list' ? 'text-right' : 'mt-3'}`}>
-        {getRelativeTime(new Date(bookmark.createdAt))}
+        {getRelativeTime(bookmark.createdAt)}
       </div>
     </div>
   );

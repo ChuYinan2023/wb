@@ -10,7 +10,14 @@ interface BookmarkListProps {
 
 export function BookmarkList({ bookmarks, viewMode, onDeleteBookmark }: BookmarkListProps) {
   const groupedBookmarks = bookmarks.reduce((groups, bookmark) => {
-    const date = new Date(bookmark.createdAt).toLocaleDateString(undefined, {
+    // 安全地解析日期
+    const safeParseDate = (dateStr: string): Date => {
+      const parsedDate = new Date(dateStr);
+      return isNaN(parsedDate.getTime()) ? new Date() : parsedDate;
+    };
+
+    const parsedDate = safeParseDate(bookmark.createdAt);
+    const date = parsedDate.toLocaleDateString('zh-CN', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
