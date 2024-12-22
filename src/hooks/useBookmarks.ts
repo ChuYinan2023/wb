@@ -82,11 +82,33 @@ export function useBookmarks() {
         }
       }
 
+      // 如果没有传入标题，尝试获取
+      if (!title) {
+        try {
+          const response = await fetch(import.meta.env.DEV 
+            ? 'http://localhost:8888/.netlify/functions/get-page-title'
+            : '/.netlify/functions/get-page-title', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ url })
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            title = data.title;
+          }
+        } catch (titleError) {
+          console.error('获取页面标题失败:', titleError);
+        }
+      }
+
       // In a real app, you'd fetch metadata from the URL here
       const newBookmark = {
         user_id: user.id,
         url,
-        title: title || url, // 使用传入的标题或 URL 作为默认标题
+        title: title || url, // 使用传入的标题、获取的标题或 URL 作为默认标题
         description: description || '', // 使用传入的描述或清空描述
         tags,
         thumbnail: favicon || `https://www.google.com/s2/favicons?domain=${new URL(url).hostname}&sz=32`,

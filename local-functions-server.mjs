@@ -37,6 +37,8 @@ app.use(bodyParser.json());
 
 // 处理预检请求
 app.options('/.netlify/functions/extract-keywords', cors(corsOptions));
+app.options('/.netlify/functions/get-favicon', cors(corsOptions));
+app.options('/.netlify/functions/get-page-title', cors(corsOptions));
 
 app.post('/.netlify/functions/extract-keywords', async (req, res) => {
   console.log('收到关键词提取请求，完整请求体:', JSON.stringify(req.body, null, 2));
@@ -142,6 +144,71 @@ app.post('/.netlify/functions/extract-keywords', async (req, res) => {
       error: 'Failed to extract keywords', 
       details: error instanceof Error ? error.message : 'Unknown error',
       fullError: error
+    });
+  }
+});
+
+// 添加 favicon 处理程序
+app.post('/.netlify/functions/get-favicon', async (req, res) => {
+  console.log('收到 favicon 请求，完整请求体:', JSON.stringify(req.body, null, 2));
+
+  try {
+    const { url } = req.body;
+
+    if (!url) {
+      return res.status(400).json({ error: 'URL is required' });
+    }
+
+    const faviconUrl = `https://www.google.com/s2/favicons?domain=${new URL(url).hostname}&sz=32`;
+
+    const faviconResponse = await axios.get(faviconUrl, {
+      responseType: 'arraybuffer',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+      },
+      timeout: 5000
+    });
+
+    const base64Favicon = `data:image/png;base64,${Buffer.from(faviconResponse.data, 'binary').toString('base64')}`;
+
+    return res.status(200).json({ favicon: base64Favicon });
+  } catch (error) {
+    console.error('Favicon extraction error:', error);
+    return res.status(500).json({ 
+      error: 'Failed to extract favicon', 
+      details: error.message 
+    });
+  }
+});
+
+// 添加页面标题处理程序
+app.post('/.netlify/functions/get-page-title', async (req, res) => {
+  console.log('收到页面标题请求，完整请求体:', JSON.stringify(req.body, null, 2));
+
+  try {
+    const { url } = req.body;
+
+    if (!url) {
+      return res.status(400).json({ error: 'URL is required' });
+    }
+
+    const response = await axios.get(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+      },
+      timeout: 10000
+    });
+
+    const htmlContent = response.data;
+    const $ = cheerio.load(htmlContent);
+    const title = $('title').text().trim() || new URL(url).hostname;
+
+    return res.status(200).json({ title });
+  } catch (error) {
+    console.error('Page title extraction error:', error);
+    return res.status(500).json({ 
+      error: 'Failed to extract page title', 
+      details: error.message 
     });
   }
 });

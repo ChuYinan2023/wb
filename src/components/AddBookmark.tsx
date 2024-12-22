@@ -13,6 +13,7 @@ export function AddBookmark({ onAdd }: AddBookmarkProps) {
   const [keywords, setKeywords] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [favicon, setFavicon] = useState<string | null>(null);
+  const [title, setTitle] = useState<string | null>(null);
 
   const isValidUrl = (url: string): boolean => {
     try {
@@ -42,6 +43,27 @@ export function AddBookmark({ onAdd }: AddBookmarkProps) {
       }
     } catch (error) {
       console.error('获取 favicon 失败:', error);
+    }
+  };
+
+  const fetchPageTitle = async (url: string) => {
+    try {
+      const response = await fetch(import.meta.env.DEV 
+        ? 'http://localhost:8888/.netlify/functions/get-page-title'
+        : '/.netlify/functions/get-page-title', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ url })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setTitle(data.title);
+      }
+    } catch (error) {
+      console.error('获取页面标题失败:', error);
     }
   };
 
@@ -91,17 +113,19 @@ export function AddBookmark({ onAdd }: AddBookmarkProps) {
     if (trimmedUrl && (isValidUrl(trimmedUrl))) {
       const formattedUrl = trimmedUrl.includes('://') ? trimmedUrl : `https://${trimmedUrl}`;
       
-      // 同时获取关键词和 favicon
-      const [extractedKeywords, faviconUrl] = await Promise.all([
+      // 同时获取关键词、favicon 和标题
+      const [extractedKeywords, faviconUrl, pageTitle] = await Promise.all([
         extractKeywords(formattedUrl),
-        fetchFavicon(formattedUrl)
+        fetchFavicon(formattedUrl),
+        fetchPageTitle(formattedUrl)
       ]);
       
-      onAdd(formattedUrl, tags, undefined, undefined, extractedKeywords, favicon || undefined);
+      onAdd(formattedUrl, tags, title || undefined, undefined, extractedKeywords, favicon || undefined);
       setUrl('');
       setTags([]);
       setKeywords(extractedKeywords);
       setFavicon(null);
+      setTitle(null);
       setError('');
     } else {
       setError('请输入有效的网址（需要包含 http:// 或 https://）');
