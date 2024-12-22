@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Plus, X } from 'lucide-react';
 
 interface AddBookmarkProps {
-  onAdd: (url: string, tags: string[], title?: string, description?: string, keywords?: string[], favicon?: string) => void;
+  onAdd: (url: string, tags: string[], title?: string, description?: string, keywords?: string[], favicon?: string, summary?: string) => void;
 }
 
 export function AddBookmark({ onAdd }: AddBookmarkProps) {
@@ -14,6 +14,7 @@ export function AddBookmark({ onAdd }: AddBookmarkProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [favicon, setFavicon] = useState<string | null>(null);
   const [title, setTitle] = useState<string | null>(null);
+  const [summary, setSummary] = useState('');
 
   const isValidUrl = (url: string): boolean => {
     try {
@@ -106,6 +107,41 @@ export function AddBookmark({ onAdd }: AddBookmarkProps) {
     }
   };
 
+  const extractSummary = async (url: string) => {
+    try {
+      setIsLoading(true);
+      const response = await fetch(import.meta.env.DEV 
+        ? 'http://localhost:8888/.netlify/functions/extract-summary'
+        : '/.netlify/functions/extract-summary', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ url })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const newSummary = data.summary || '';
+        
+        console.log('提取的摘要:', newSummary);
+        setSummary(newSummary);
+        return newSummary;
+      } else {
+        const errorText = await response.text();
+        console.error('摘要提取失败，状态码:', response.status);
+        console.error('错误响应:', errorText);
+        setSummary('');
+      }
+    } catch (error) {
+      console.error('摘要提取异常:', error);
+      setSummary('');
+    } finally {
+      setIsLoading(false);
+    }
+    return '';
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmedUrl = url.trim();
@@ -114,18 +150,20 @@ export function AddBookmark({ onAdd }: AddBookmarkProps) {
       const formattedUrl = trimmedUrl.includes('://') ? trimmedUrl : `https://${trimmedUrl}`;
       
       // 同时获取关键词、favicon 和标题
-      const [extractedKeywords, faviconUrl, pageTitle] = await Promise.all([
+      const [extractedKeywords, faviconUrl, pageTitle, pageSummary] = await Promise.all([
         extractKeywords(formattedUrl),
         fetchFavicon(formattedUrl),
-        fetchPageTitle(formattedUrl)
+        fetchPageTitle(formattedUrl),
+        extractSummary(formattedUrl)
       ]);
       
-      onAdd(formattedUrl, tags, title || undefined, undefined, extractedKeywords, favicon || undefined);
+      onAdd(formattedUrl, tags, title || undefined, pageSummary, extractedKeywords, favicon || undefined);
       setUrl('');
       setTags([]);
       setKeywords(extractedKeywords);
       setFavicon(null);
       setTitle(null);
+      setSummary('');
       setError('');
     } else {
       setError('请输入有效的网址（需要包含 http:// 或 https://）');

@@ -37,7 +37,8 @@ export function useBookmarks() {
     title?: string, 
     description?: string, 
     keywords: string[] = [],
-    favicon?: string
+    favicon?: string,
+    summary?: string
   ) => {
     if (!user) {
       console.error('用户未登录');
@@ -60,64 +61,28 @@ export function useBookmarks() {
         return;
       }
 
-      // 如果没有传入 favicon，尝试获取
-      if (!favicon) {
-        try {
-          const response = await fetch(import.meta.env.DEV 
-            ? 'http://localhost:8888/.netlify/functions/get-favicon'
-            : '/.netlify/functions/get-favicon', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ url })
-          });
+      console.log('添加书签详细信息:', { 
+        url, 
+        tags, 
+        title, 
+        description, 
+        keywords, 
+        favicon, 
+        summary 
+      });
 
-          if (response.ok) {
-            const data = await response.json();
-            favicon = data.favicon;
-          }
-        } catch (faviconError) {
-          console.error('获取 favicon 失败:', faviconError);
-        }
-      }
-
-      // 如果没有传入标题，尝试获取
-      if (!title) {
-        try {
-          const response = await fetch(import.meta.env.DEV 
-            ? 'http://localhost:8888/.netlify/functions/get-page-title'
-            : '/.netlify/functions/get-page-title', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ url })
-          });
-
-          if (response.ok) {
-            const data = await response.json();
-            title = data.title;
-          }
-        } catch (titleError) {
-          console.error('获取页面标题失败:', titleError);
-        }
-      }
-
-      // In a real app, you'd fetch metadata from the URL here
       const newBookmark = {
         user_id: user.id,
         url,
-        title: title || url, // 使用传入的标题、获取的标题或 URL 作为默认标题
-        description: description || '', // 使用传入的描述或清空描述
+        title: title || url,
+        description: description || '',
         tags,
         thumbnail: favicon || `https://www.google.com/s2/favicons?domain=${new URL(url).hostname}&sz=32`,
-        keywords: keywords && keywords.length > 0 ? keywords : null
+        keywords: keywords && keywords.length > 0 ? keywords : null,
+        summary: summary || ''
       };
-      
-      console.log('尝试添加书签:', newBookmark);
-      console.log('当前用户ID:', user.id);
-      console.log('Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
+
+      console.log('准备插入的书签数据:', newBookmark);
       
       const { data, error } = await supabase
         .from('bookmarks')
