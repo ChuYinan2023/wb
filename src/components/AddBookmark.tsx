@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Plus, X } from 'lucide-react';
 
 interface AddBookmarkProps {
-  onAdd: (url: string, tags: string[]) => void;
+  onAdd: (url: string, tags: string[], title?: string, description?: string) => void;
 }
 
 export function AddBookmark({ onAdd }: AddBookmarkProps) {
@@ -31,9 +31,10 @@ export function AddBookmark({ onAdd }: AddBookmarkProps) {
     if (trimmedUrl && (isValidUrl(trimmedUrl))) {
       // 如果没有协议，自动添加 https://
       const formattedUrl = trimmedUrl.includes('://') ? trimmedUrl : `https://${trimmedUrl}`;
-      onAdd(formattedUrl, tags);
+      onAdd(formattedUrl, [...tags, ...keywords]);
       setUrl('');
       setTags([]);
+      setKeywords([]);
       setError('');
     } else {
       // 更具体的错误提示
