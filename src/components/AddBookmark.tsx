@@ -49,9 +49,15 @@ export function AddBookmark({ onAdd }: AddBookmarkProps) {
 
   const fetchPageTitle = async (url: string) => {
     try {
-      const response = await fetch(import.meta.env.DEV 
+      console.log('开发环境:', import.meta.env.DEV);
+      const apiUrl = import.meta.env.DEV 
         ? 'http://localhost:8888/.netlify/functions/get-page-title'
-        : '/.netlify/functions/get-page-title', {
+        : '/.netlify/functions/get-page-title';
+      
+      console.log('请求 URL:', apiUrl);
+      console.log('目标网页 URL:', url);
+
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -59,12 +65,27 @@ export function AddBookmark({ onAdd }: AddBookmarkProps) {
         body: JSON.stringify({ url })
       });
 
+      console.log('响应状态:', response.status);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('获取的标题数据:', data);
         setTitle(data.title);
+        return data.title;
+      } else {
+        const errorText = await response.text();
+        console.error('获取标题失败，响应内容:', errorText);
+        // 如果获取失败，尝试从 URL 中提取域名
+        const hostname = new URL(url).hostname.replace('www.', '');
+        setTitle(hostname);
+        return hostname;
       }
     } catch (error) {
-      console.error('获取页面标题失败:', error);
+      console.error('获取页面标题失败，详细错误:', error);
+      // 如果完全失败，使用 URL 作为标题
+      const hostname = new URL(url).hostname.replace('www.', '');
+      setTitle(hostname);
+      return hostname;
     }
   };
 
@@ -132,41 +153,63 @@ export function AddBookmark({ onAdd }: AddBookmarkProps) {
         console.error('摘要提取失败，状态码:', response.status);
         console.error('错误响应:', errorText);
         setSummary('');
+        return '';
       }
     } catch (error) {
       console.error('摘要提取异常:', error);
       setSummary('');
+      return '';
     } finally {
       setIsLoading(false);
     }
-    return '';
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const trimmedUrl = url.trim();
-    
-    if (trimmedUrl && (isValidUrl(trimmedUrl))) {
-      const formattedUrl = trimmedUrl.includes('://') ? trimmedUrl : `https://${trimmedUrl}`;
-      
-      // 同时获取关键词、favicon 和标题
-      const [extractedKeywords, faviconUrl, pageTitle, pageSummary] = await Promise.all([
-        extractKeywords(formattedUrl),
-        fetchFavicon(formattedUrl),
-        fetchPageTitle(formattedUrl),
-        extractSummary(formattedUrl)
+    setError('');
+
+    if (!isValidUrl(url)) {
+      setError('请输入有效的网页链接');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const fullUrl = url.startsWith('http') ? url : `https://${url}`;
+
+      // 并行获取标题、关键词、摘要和 favicon
+      const [extractedTitle, extractedKeywords, extractedSummary, extractedFavicon] = await Promise.all([
+        fetchPageTitle(fullUrl),
+        extractKeywords(fullUrl),
+        extractSummary(fullUrl),
+        fetchFavicon(fullUrl)
       ]);
-      
-      onAdd(formattedUrl, tags, title || undefined, pageSummary, extractedKeywords, favicon || undefined);
+
+      // 使用获取的数据调用 onAdd
+      onAdd(
+        fullUrl, 
+        tags, 
+        extractedTitle || title || fullUrl, 
+        '', 
+        extractedKeywords, 
+        favicon, 
+        extractedSummary
+      );
+
+      // 重置表单
       setUrl('');
       setTags([]);
-      setKeywords(extractedKeywords);
-      setFavicon(null);
+      setTagInput('');
       setTitle(null);
+      setFavicon(null);
       setSummary('');
-      setError('');
-    } else {
-      setError('请输入有效的网址（需要包含 http:// 或 https://）');
+      setKeywords([]);
+    } catch (err) {
+      console.error('添加书签失败:', err);
+      setError('添加书签时发生错误');
+    } finally {
+      setIsLoading(false);
     }
   };
 

@@ -8,7 +8,7 @@ const headers = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS'
 };
 
-export const handler: Handler = async (event, context) => {
+export const handler: Handler = async (event) => {
   // 处理预检请求
   if (event.httpMethod === 'OPTIONS') {
     return {
@@ -28,7 +28,6 @@ export const handler: Handler = async (event, context) => {
       };
     }
 
-    // 解析请求体
     const { url } = JSON.parse(event.body || '{}');
 
     if (!url) {
@@ -39,19 +38,17 @@ export const handler: Handler = async (event, context) => {
       };
     }
 
-    // 获取网页内容
     const response = await axios.get(url, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
       },
-      timeout: 10000 // 10秒超时
+      timeout: 10000
     });
 
-    const htmlContent = response.data;
-
-    // 使用 cheerio 提取标题
-    const $ = cheerio.load(htmlContent);
-    const title = $('title').text().trim() || new URL(url).hostname;
+    const $ = cheerio.load(response.data);
+    const title = $('title').text().trim() || 
+                  $('h1').first().text().trim() || 
+                  new URL(url).hostname;
 
     return {
       statusCode: 200,
@@ -59,7 +56,7 @@ export const handler: Handler = async (event, context) => {
       body: JSON.stringify({ title })
     };
   } catch (error) {
-    console.error('Page title extraction error:', error);
+    console.error('页面标题提取错误:', error);
     return { 
       statusCode: 500, 
       headers,

@@ -67,10 +67,10 @@ export function BookmarkCard({ bookmark, viewMode, onDelete }: BookmarkCardProps
           </div>
         </div>
         
-        {bookmark.description && (
-          <p className="text-gray-600 mb-3 line-clamp-2 text-sm">
-            {bookmark.description}
-          </p>
+        {bookmark.summary && (
+          <div className="text-gray-600 mb-3 line-clamp-3 text-sm">
+            {bookmark.summary}
+          </div>
         )}
 
         {/* 关键词展示区域 */}
