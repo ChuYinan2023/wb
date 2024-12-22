@@ -61,8 +61,20 @@ export const handler: Handler = async (event, context) => {
     const mainText = $('body').text().replace(/\s+/g, ' ').trim().slice(0, 3000);
 
     // 使用 ZhipuAI 提取关键词
+    const apiKey = process.env.ZHIPUAI_API_KEY;
+    if (!apiKey) {
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({ 
+          error: 'API Key 未配置', 
+          details: 'ZHIPUAI_API_KEY 环境变量未设置' 
+        })
+      };
+    }
+
     const client = new ZhipuAI({
-      apiKey: process.env.ZHIPUAI_API_KEY || ''
+      apiKey: apiKey
     });
     
     const aiResponse = await client.chat.completions.create({
