@@ -10,6 +10,8 @@ export function AddBookmark({ onAdd }: AddBookmarkProps) {
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [error, setError] = useState('');
+  const [keywords, setKeywords] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const isValidUrl = (url: string): boolean => {
     try {
@@ -50,6 +52,58 @@ export function AddBookmark({ onAdd }: AddBookmarkProps) {
     setTags(tags.filter(tag => tag !== tagToRemove));
   };
 
+  const extractKeywords = async () => {
+    if (!url) return;
+
+    setIsLoading(true);
+    setError(''); // 清除之前的错误
+    try {
+      console.log('发起关键词提取请求，URL:', url);
+      
+      // 确保 URL 是完整的
+      const fullUrl = url.startsWith('http') ? url : `https://${url}`;
+      
+      const response = await fetch(import.meta.env.DEV 
+        ? 'http://localhost:8888/.netlify/functions/extract-keywords'
+        : '/.netlify/functions/extract-keywords', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ url: fullUrl })
+      });
+
+      console.log('响应状态:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('错误响应内容:', errorText);
+        throw new Error(errorText || '关键词提取失败');
+      }
+
+      const data = await response.json();
+      console.log('响应数据:', data);
+      
+      const newKeywords = data.keywords || [];
+      
+      console.log('提取的关键词:', newKeywords);
+      
+      // 添加新关键词，避免重复
+      const uniqueKeywords = newKeywords.filter(
+        (keyword: string) => !keywords.includes(keyword)
+      );
+      
+      setKeywords([...keywords, ...uniqueKeywords]);
+      setError('');
+    } catch (err: any) {
+      console.error('关键词提取失败', err);
+      
+      setError('关键词提取失败：' + (err.message || '未知错误'));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-md p-4 mb-6">
       <div className="flex gap-4 mb-4">
@@ -57,25 +111,52 @@ export function AddBookmark({ onAdd }: AddBookmarkProps) {
           <input
             type="text"
             value={url}
-            onChange={(e) => {
-              setUrl(e.target.value);
-              setError('');
-            }}
-            placeholder="Enter URL to bookmark (e.g., https://example.com)"
-            className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
-              error ? 'border-red-500 focus:ring-red-500' : 'focus:ring-blue-500'
-            }`}
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder="输入网页链接"
+            className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-          {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
         </div>
         <button
-          type="submit"
-          className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 flex items-center gap-2"
+          type="button"
+          onClick={extractKeywords}
+          disabled={!url || isLoading}
+          className={`px-4 py-2 rounded-md transition-colors ${
+            !url || isLoading 
+              ? 'bg-gray-300 cursor-not-allowed' 
+              : 'bg-blue-500 text-white hover:bg-blue-600'
+          }`}
         >
-          <Plus size={20} />
-          Add
+          {isLoading ? '提取中...' : '提取关键词'}
         </button>
       </div>
+      
+      {error && (
+        <div className="text-red-500 text-sm mb-2">
+          {error}
+        </div>
+      )}
+      
+      {/* 关键词显示区域 */}
+      {keywords.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-4">
+          {keywords.map((keyword, index) => (
+            <span 
+              key={index} 
+              className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs"
+            >
+              {keyword}
+              <button 
+                type="button"
+                onClick={() => removeTag(keyword)}
+                className="ml-1 text-red-500 hover:text-red-700"
+              >
+                ×
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+      
       <div className="flex gap-2 items-center">
         <input
           type="text"
@@ -112,6 +193,13 @@ export function AddBookmark({ onAdd }: AddBookmarkProps) {
           ))}
         </div>
       )}
+      <button
+        type="submit"
+        className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 flex items-center gap-2"
+      >
+        <Plus size={20} />
+        Add
+      </button>
     </form>
   );
 }

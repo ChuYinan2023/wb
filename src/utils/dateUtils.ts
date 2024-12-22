@@ -1,4 +1,7 @@
-export function getRelativeTime(date: Date | string): string {
+export function getRelativeTime(date: Date | string | undefined): string {
+  // 处理 undefined 和无效日期
+  if (!date) return '未知时间';
+
   // 安全地转换日期
   const safeParseDate = (input: Date | string): Date => {
     // 如果已经是 Date 对象，直接返回
@@ -23,6 +26,11 @@ export function getRelativeTime(date: Date | string): string {
   const minutes = Math.floor(seconds / 60);
   const hours = Math.floor(minutes / 60);
   const days = Math.floor(hours / 24);
+
+  // 处理未来日期
+  if (diff < 0) {
+    return '刚刚';
+  }
 
   // 刚刚
   if (seconds < 60) {
@@ -49,17 +57,9 @@ export function getRelativeTime(date: Date | string): string {
     return `${days}天前`;
   }
 
-  // 同一年
-  if (parsedDate.getFullYear() === now.getFullYear()) {
-    return parsedDate.toLocaleDateString('zh-CN', {
-      month: 'numeric',
-      day: 'numeric'
-    });
-  }
-
-  // 不同年份
+  // 超过一周，返回具体日期
   return parsedDate.toLocaleDateString('zh-CN', {
-    year: 'numeric',
+    year: now.getFullYear() === parsedDate.getFullYear() ? undefined : 'numeric',
     month: 'numeric',
     day: 'numeric'
   });

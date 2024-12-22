@@ -1,6 +1,7 @@
 [build]
-  command = "npm run build"
+  command = "npm run build && npm run build:functions"
   publish = "dist"
+  functions = "functions"
 
 [build.environment]
   NODE_VERSION = "20"
@@ -10,3 +11,13 @@
   from = "/*"
   to = "/index.html"
   status = 200
+
+[functions]
+  node_bundler = "esbuild"
+
+[dev]
+  functions = "functions"
+  publish = "dist"
+
+[context.production.environment]
+  ZHIPUAI_API_KEY = "e8d5a4cd0a1d496de21ed08c64268a85.H8YYYahnU4CRGq8X"
