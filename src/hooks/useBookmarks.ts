@@ -36,7 +36,8 @@ export function useBookmarks() {
     tags: string[], 
     title?: string, 
     description?: string, 
-    keywords: string[] = []
+    keywords: string[] = [],
+    favicon?: string
   ) => {
     if (!user) {
       console.error('用户未登录');
@@ -59,6 +60,28 @@ export function useBookmarks() {
         return;
       }
 
+      // 如果没有传入 favicon，尝试获取
+      if (!favicon) {
+        try {
+          const response = await fetch(import.meta.env.DEV 
+            ? 'http://localhost:8888/.netlify/functions/get-favicon'
+            : '/.netlify/functions/get-favicon', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ url })
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            favicon = data.favicon;
+          }
+        } catch (faviconError) {
+          console.error('获取 favicon 失败:', faviconError);
+        }
+      }
+
       // In a real app, you'd fetch metadata from the URL here
       const newBookmark = {
         user_id: user.id,
@@ -66,7 +89,7 @@ export function useBookmarks() {
         title: title || url, // 使用传入的标题或 URL 作为默认标题
         description: description || '', // 使用传入的描述或清空描述
         tags,
-        thumbnail: 'https://images.unsplash.com/photo-1432821596592-e2c18b78144f?w=32&h=32&fit=crop&auto=format',
+        thumbnail: favicon || `https://www.google.com/s2/favicons?domain=${new URL(url).hostname}&sz=32`,
         keywords: keywords && keywords.length > 0 ? keywords : null
       };
       

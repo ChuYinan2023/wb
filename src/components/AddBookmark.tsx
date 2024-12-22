@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Plus, X } from 'lucide-react';
 
 interface AddBookmarkProps {
-  onAdd: (url: string, tags: string[], title?: string, description?: string, keywords?: string[]) => void;
+  onAdd: (url: string, tags: string[], title?: string, description?: string, keywords?: string[], favicon?: string) => void;
 }
 
 export function AddBookmark({ onAdd }: AddBookmarkProps) {
@@ -12,6 +12,7 @@ export function AddBookmark({ onAdd }: AddBookmarkProps) {
   const [error, setError] = useState('');
   const [keywords, setKeywords] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [favicon, setFavicon] = useState<string | null>(null);
 
   const isValidUrl = (url: string): boolean => {
     try {
@@ -20,6 +21,27 @@ export function AddBookmark({ onAdd }: AddBookmarkProps) {
       return ['http:', 'https:'].includes(parsedUrl.protocol);
     } catch {
       return false;
+    }
+  };
+
+  const fetchFavicon = async (url: string) => {
+    try {
+      const response = await fetch(import.meta.env.DEV 
+        ? 'http://localhost:8888/.netlify/functions/get-favicon'
+        : '/.netlify/functions/get-favicon', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ url })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setFavicon(data.favicon);
+      }
+    } catch (error) {
+      console.error('获取 favicon 失败:', error);
     }
   };
 
@@ -69,12 +91,17 @@ export function AddBookmark({ onAdd }: AddBookmarkProps) {
     if (trimmedUrl && (isValidUrl(trimmedUrl))) {
       const formattedUrl = trimmedUrl.includes('://') ? trimmedUrl : `https://${trimmedUrl}`;
       
-      const extractedKeywords = await extractKeywords(formattedUrl);
+      // 同时获取关键词和 favicon
+      const [extractedKeywords, faviconUrl] = await Promise.all([
+        extractKeywords(formattedUrl),
+        fetchFavicon(formattedUrl)
+      ]);
       
-      onAdd(formattedUrl, tags, undefined, undefined, extractedKeywords);
+      onAdd(formattedUrl, tags, undefined, undefined, extractedKeywords, favicon || undefined);
       setUrl('');
       setTags([]);
       setKeywords(extractedKeywords);
+      setFavicon(null);
       setError('');
     } else {
       setError('请输入有效的网址（需要包含 http:// 或 https://）');
