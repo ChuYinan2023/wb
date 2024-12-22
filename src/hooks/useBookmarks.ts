@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../stores/authStore';
 import type { Database } from '../types/database';
 
-type Bookmark = Database['public']['Tables']['bookmarks']['Row'];
+type Bookmark = Database['public']['Tables']['bookmarks']['Row']
 
 export function useBookmarks() {
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
@@ -58,12 +58,12 @@ export function useBookmarks() {
     }
   };
 
-  const deleteBookmark = async (id: string) => {
+  const deleteBookmark = async (bookmarkId: string) => {
     try {
       const { error } = await supabase
         .from('bookmarks')
         .delete()
-        .eq('id', id);
+        .eq('id', bookmarkId);
 
       if (error) throw error;
       

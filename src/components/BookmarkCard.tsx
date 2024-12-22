@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ExternalLink, Tag, Trash2, Globe } from 'lucide-react';
+import { ExternalLink, Tag, Trash2, Globe, Bookmark as BookmarkIcon } from 'lucide-react';
 import { Bookmark } from '../types';
 import { getRelativeTime } from '../utils/dateUtils';
 
@@ -72,27 +72,39 @@ export function BookmarkCard({ bookmark, viewMode, onDelete }: BookmarkCardProps
           </p>
         )}
 
+        {/* 关键词展示区域 */}
         {bookmark.keywords && bookmark.keywords.length > 0 && (
-          <div className="mb-3">
-            <p className="text-xs text-gray-500 mb-1">Keywords:</p>
-            <p className="text-sm text-gray-600">{bookmark.keywords.join(', ')}</p>
+          <div className="flex flex-wrap gap-2 mt-2">
+            {bookmark.keywords.map((keyword, index) => (
+              <span 
+                key={index} 
+                className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full flex items-center gap-1"
+              >
+                <BookmarkIcon size={12} className="text-purple-500" />
+                {keyword}
+              </span>
+            ))}
           </div>
         )}
 
-        <div className="flex flex-wrap gap-2">
-          {bookmark.tags.map(tag => (
-            <span
-              key={tag}
-              className="inline-flex items-center gap-1 bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-sm"
-            >
-              <Tag size={12} />
-              {tag}
-            </span>
-          ))}
+        {/* 标签展示区域 */}
+        {bookmark.tags && bookmark.tags.length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-2">
+            {bookmark.tags.map((tag, index) => (
+              <span 
+                key={index} 
+                className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full flex items-center gap-1"
+              >
+                <Tag size={12} className="text-blue-500" />
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
+
+        <div className={`text-sm text-gray-500 ${viewMode === 'list' ? 'text-right' : 'mt-3'}`}>
+          {getRelativeTime(bookmark.created_at)}
         </div>
-      </div>
-      <div className={`text-sm text-gray-500 ${viewMode === 'list' ? 'text-right' : 'mt-3'}`}>
-        {getRelativeTime(bookmark.createdAt)}
       </div>
     </div>
   );
