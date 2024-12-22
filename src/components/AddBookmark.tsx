@@ -9,13 +9,33 @@ export function AddBookmark({ onAdd }: AddBookmarkProps) {
   const [url, setUrl] = useState('');
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>([]);
+  const [error, setError] = useState('');
+
+  const isValidUrl = (url: string): boolean => {
+    try {
+      // 更宽松的 URL 校验
+      const parsedUrl = new URL(url.includes('://') ? url : `https://${url}`);
+      return ['http:', 'https:'].includes(parsedUrl.protocol);
+    } catch {
+      return false;
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (url.trim()) {
-      onAdd(url.trim(), tags);
+    const trimmedUrl = url.trim();
+    
+    // 更宽松的 URL 校验
+    if (trimmedUrl && (isValidUrl(trimmedUrl))) {
+      // 如果没有协议，自动添加 https://
+      const formattedUrl = trimmedUrl.includes('://') ? trimmedUrl : `https://${trimmedUrl}`;
+      onAdd(formattedUrl, tags);
       setUrl('');
       setTags([]);
+      setError('');
+    } else {
+      // 更具体的错误提示
+      setError('请输入有效的网址（需要包含 http:// 或 https://）');
     }
   };
 
@@ -33,14 +53,21 @@ export function AddBookmark({ onAdd }: AddBookmarkProps) {
   return (
     <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-md p-4 mb-6">
       <div className="flex gap-4 mb-4">
-        <input
-          type="url"
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          placeholder="Enter URL to bookmark"
-          className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          required
-        />
+        <div className="flex-1">
+          <input
+            type="text"
+            value={url}
+            onChange={(e) => {
+              setUrl(e.target.value);
+              setError('');
+            }}
+            placeholder="Enter URL to bookmark (e.g., https://example.com)"
+            className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
+              error ? 'border-red-500 focus:ring-red-500' : 'focus:ring-blue-500'
+            }`}
+          />
+          {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
+        </div>
         <button
           type="submit"
           className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 flex items-center gap-2"
