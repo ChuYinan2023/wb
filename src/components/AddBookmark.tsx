@@ -1,14 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, X } from 'lucide-react';
 
 interface AddBookmarkProps {
   onAdd: (url: string, tags: string[], title?: string, description?: string, keywords?: string[], favicon?: string, summary?: string) => void;
+  bookmarks?: any[];
 }
 
-export function AddBookmark({ onAdd }: AddBookmarkProps) {
+export function AddBookmark({ onAdd, bookmarks }: AddBookmarkProps) {
   const [url, setUrl] = useState('');
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>([]);
+  const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [error, setError] = useState('');
   const [keywords, setKeywords] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -164,6 +166,39 @@ export function AddBookmark({ onAdd }: AddBookmarkProps) {
     }
   };
 
+  const getAllUniqueTags = () => {
+    const allTags = bookmarks?.flatMap(bookmark => bookmark.tags || []) || [];
+    return [...new Set(allTags)].sort();
+  };
+
+  const handleTagInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const input = (e.target as HTMLInputElement).value.trim();
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      // 使用空格分隔，并过滤掉重复和空标签
+      const newTags = input.split(/\s+/).filter(tag => tag && !tags.includes(tag));
+      setTags(prev => [...new Set([...prev, ...newTags])]);
+      setTagInput('');
+    }
+  };
+
+  const removeTag = (tagToRemove: string) => {
+    setTags(prev => prev.filter(tag => tag !== tagToRemove));
+  };
+
+  const selectTag = (tag: string) => {
+    if (!tags.includes(tag)) {
+      setTags(prev => [...prev, tag]);
+    }
+  };
+
+  useEffect(() => {
+    if (bookmarks) {
+      const uniqueTags = getAllUniqueTags();
+      setAvailableTags(uniqueTags);
+    }
+  }, [bookmarks]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -213,17 +248,6 @@ export function AddBookmark({ onAdd }: AddBookmarkProps) {
     }
   };
 
-  const addTag = () => {
-    if (tagInput.trim() && !tags.includes(tagInput.trim())) {
-      setTags([...tags, tagInput.trim()]);
-      setTagInput('');
-    }
-  };
-
-  const removeTag = (tagToRemove: string) => {
-    setTags(tags.filter(tag => tag !== tagToRemove));
-  };
-
   return (
     <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-md p-4 mb-6">
       <div className="flex gap-4 mb-4">
@@ -238,35 +262,52 @@ export function AddBookmark({ onAdd }: AddBookmarkProps) {
         </div>
       </div>
       
-      <div className="flex gap-2 items-center mb-4">
+      <div className="flex items-center gap-2 mb-4">
         <input
           type="text"
           value={tagInput}
           onChange={(e) => setTagInput(e.target.value)}
-          onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
-          placeholder="添加标签"
+          onKeyPress={handleTagInput}
+          placeholder="添加标签（空格或回车分隔）"
           className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1"
         />
-        <button
-          type="button"
-          onClick={addTag}
-          className="bg-gray-100 px-4 py-2 rounded-lg hover:bg-gray-200"
-        >
-          添加标签
-        </button>
       </div>
       
       {tags.length > 0 && (
-        <div className="flex items-center gap-2 mb-4">
-          <span className="text-sm text-gray-600">标签：</span>
+        <div className="mb-4">
           <div className="flex flex-wrap gap-2">
-            {tags.map(tag => (
+            {tags.map((tag) => (
               <span
                 key={tag}
-                className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full"
+                className="flex items-center bg-blue-100 text-blue-800 px-3 py-1 rounded-full"
               >
                 {tag}
+                <button
+                  type="button"
+                  onClick={() => removeTag(tag)}
+                  className="ml-2 text-gray-500 hover:text-gray-700"
+                >
+                  <X size={16} />
+                </button>
               </span>
+            ))}
+          </div>
+        </div>
+      )}
+      
+      {availableTags.length > 0 && (
+        <div className="flex flex-col gap-2 mb-4">
+          <span className="text-sm text-gray-600">可用标签：</span>
+          <div className="flex flex-wrap gap-2">
+            {availableTags.map(tag => (
+              <button
+                key={tag}
+                type="button"
+                onClick={() => selectTag(tag)}
+                className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full hover:bg-gray-200 text-sm"
+              >
+                {tag}
+              </button>
             ))}
           </div>
         </div>
