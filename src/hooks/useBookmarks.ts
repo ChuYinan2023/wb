@@ -31,7 +31,13 @@ export function useBookmarks() {
     setBookmarks(data);
   };
 
-  const addBookmark = async (url: string, tags: string[], keywords: string[] = []) => {
+  const addBookmark = async (
+    url: string, 
+    tags: string[], 
+    title?: string, 
+    description?: string, 
+    keywords: string[] = []
+  ) => {
     if (!user) {
       console.error('用户未登录');
       alert('请先登录');
@@ -57,11 +63,11 @@ export function useBookmarks() {
       const newBookmark = {
         user_id: user.id,
         url,
-        title: url, // 使用 URL 作为默认标题
-        description: '', // 清空描述
+        title: title || url, // 使用传入的标题或 URL 作为默认标题
+        description: description || '', // 使用传入的描述或清空描述
         tags,
         thumbnail: 'https://images.unsplash.com/photo-1432821596592-e2c18b78144f?w=32&h=32&fit=crop&auto=format',
-        keywords: keywords.length > 0 ? keywords : ['placeholder', 'new', 'bookmark']
+        keywords: keywords && keywords.length > 0 ? keywords : null
       };
       
       console.log('尝试添加书签:', newBookmark);
