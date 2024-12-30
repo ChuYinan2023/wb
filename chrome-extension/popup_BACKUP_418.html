@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>书签管理器</title>
+  <style>
+    body { 
+      width: 300px; 
+      padding: 10px; 
+      font-family: Arial, sans-serif; 
+    }
+<<<<<<< HEAD
+    /* 移除默认隐藏 */
+    .section { 
+      display: block; 
+=======
+    #loginSection, #bookmarkSection {
+      display: none;
+>>>>>>> rollback_version
+    }
+    input { 
+      width: 100%; 
+      margin: 5px 0; 
+      padding: 5px; 
+    }
+    button {
+      width: 100%;
+      padding: 8px;
+      margin: 5px 0;
+    }
+    #errorMessage {
+      color: red;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div id="loginSection">
+    <h2>登录</h2>
+    <input type="email" id="usernameInput" placeholder="邮箱">
+    <input type="password" id="passwordInput" placeholder="密码">
+    <button id="loginButton">登录</button>
+    <div id="errorMessage"></div>
+  </div>
+
+  <div id="bookmarkSection">
+    <h2>保存书签</h2>
+    <p>当前用户：<span id="userEmail"></span></p>
+    <input type="text" id="urlInput" placeholder="网址" readonly>
+    <button id="addButton">保存书签</button>
+    <button id="logoutButton">退出登录</button>
+    <div id="errorMessage"></div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
