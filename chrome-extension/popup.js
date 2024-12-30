@@ -77,6 +77,9 @@ document.addEventListener('DOMContentLoaded', () => {
     await checkAuthStatus();
   });
 
+  // 配置 Netlify Function 的基础 URL
+  const NETLIFY_FUNCTION_BASE_URL = 'https://tranquil-marigold-0af3ab.netlify.app/.netlify/functions';
+
   // 添加书签
   addButton.addEventListener('click', async () => {
     try {
@@ -108,7 +111,10 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       // 直接调用 Netlify Function 添加书签
-      const response = await fetch('https://tranquil-marigold-0af3ab.netlify.app/.netlify/functions/add-bookmark', {
+      const functionUrl = `${NETLIFY_FUNCTION_BASE_URL}/add-bookmark`;
+      console.log('调用的 Function URL:', functionUrl);
+
+      const response = await fetch(functionUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

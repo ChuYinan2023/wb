@@ -1,3 +1,6 @@
+// 配置 Netlify Function 的基础 URL
+const NETLIFY_FUNCTION_BASE_URL = 'https://tranquil-marigold-0af3ab.netlify.app/.netlify/functions';
+
 // 创建右键菜单
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
@@ -53,7 +56,10 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     }
 
     // 直接调用 Netlify Function 添加书签
-    fetch('https://tranquil-marigold-0af3ab.netlify.app/.netlify/functions/add-bookmark', {
+    const functionUrl = `${NETLIFY_FUNCTION_BASE_URL}/add-bookmark`;
+    console.log('调用的 Function URL:', functionUrl);
+
+    fetch(functionUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
