@@ -115,35 +115,44 @@ const getFavicon = async (url) => {
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   try {
     // 获取用户 token 和 Function Base URL
-    const { token, netlifyFunctionBaseUrl } = await getNetlifyFunctionBaseUrl();
-
-    // 调试：打印关键信息
-    console.log('%c🔍 保存书签调试信息', 'color: green; font-weight: bold', {
-      url: info.pageUrl || info.linkUrl,
-      token: token ? '✅ Token存在' : '❌ Token不存在',
-      functionBaseUrl: netlifyFunctionBaseUrl
+    const { token, functionBaseUrl } = await new Promise((resolve, reject) => {
+      chrome.storage.sync.get(['userToken', 'netlifyFunctionBaseUrl'], (result) => {
+        if (chrome.runtime.lastError) {
+          reject(chrome.runtime.lastError);
+        } else {
+          resolve(result);
+        }
+      });
     });
 
-    const url = info.pageUrl || info.linkUrl;
-    const title = await getPageTitle(url);
-    const keywords = await getKeywords(url);
-    const favicon = await getFavicon(url);
+    console.log('%c🔑 获取的用户 Token', 'color: blue; font-weight: bold', token);
+    console.log('%c🌐 Function Base URL', 'color: green; font-weight: bold', functionBaseUrl);
 
-    // 调试：打印附加信息
-    console.log('%c📝 书签详细信息', 'color: blue; font-weight: bold', {
-      title,
-      keywords,
-      favicon
-    });
+    // 如果没有 Token，阻止保存
+    if (!token) {
+      throw new Error('未找到用户 Token，请重新登录');
+    }
 
+    // 获取页面信息
+    const url = info.pageUrl;
+    const [title, keywords, favicon] = await Promise.all([
+      getPageTitle(url),
+      getKeywords(url),
+      getFavicon(url)
+    ]);
+
+    // 构建书签数据
     const bookmarkData = {
       url,
-      title,
-      keywords,
-      favicon
+      title: title || url,
+      keywords: keywords || [],
+      favicon: favicon || null
     };
 
-    const result = await fetch(`${netlifyFunctionBaseUrl}/add-bookmark`, {
+    console.log('%c📝 准备发送的书签数据', 'color: orange; font-weight: bold', bookmarkData);
+
+    // 使用 Fetch API 发送书签
+    const result = await fetch(`${functionBaseUrl}/add-bookmark`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -160,6 +169,10 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     });
 
     if (!result.ok) {
+      // 尝试获取最新的用户会话信息
+      const { data: { user }, error } = await supabase.auth.getUser();
+      console.warn('%c🆔 重新获取用户信息', 'color: red; font-weight: bold', { user, error });
+
       throw new Error(responseText);
     }
 
