@@ -18,6 +18,10 @@ const handler: Handler = async (event, context) => {
   try {
     const { email, password } = JSON.parse(event.body || '{}');
 
+    console.log('登录尝试:', { email, password: password ? '******' : '无密码' });
+    console.log('Supabase URL:', process.env.VITE_SUPABASE_URL);
+    console.log('Supabase Anon Key:', process.env.VITE_SUPABASE_ANON_KEY ? '已配置' : '未配置');
+
     if (!email || !password) {
       return { 
         statusCode: 400, 
