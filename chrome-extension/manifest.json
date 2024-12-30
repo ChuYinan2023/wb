@@ -22,8 +22,7 @@
     }
   },
   "background": {
-    "service_worker": "background.js",
-    "scripts": ["init.js"]
+    "service_worker": "background.js"
   },
   "content_scripts": [
     {

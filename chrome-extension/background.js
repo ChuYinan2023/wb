@@ -1,3 +1,20 @@
+// 初始化 Netlify Function 基础 URL
+chrome.runtime.onInstalled.addListener(async () => {
+  // 你可以从环境变量、配置文件或其他方式获取正确的 URL
+  const netlifyFunctionBaseUrl = 'https://tranquil-marigold-0af3ab.netlify.app/.netlify/functions';
+  
+  await chrome.storage.local.set({
+    'netlifyFunctionBaseUrl': netlifyFunctionBaseUrl
+  });
+
+  // 创建右键菜单
+  chrome.contextMenus.create({
+    id: 'saveBookmark',
+    title: '保存到书签库',
+    contexts: ['page', 'link']
+  });
+});
+
 // 从 Chrome 存储中获取 Netlify Function 的基础 URL
 const getNetlifyFunctionBaseUrl = async () => {
   const { netlifyFunctionBaseUrl } = await chrome.storage.local.get('netlifyFunctionBaseUrl');
@@ -57,15 +74,6 @@ const getFavicon = async (url) => {
     return null;
   }
 };
-
-// 创建右键菜单
-chrome.runtime.onInstalled.addListener(() => {
-  chrome.contextMenus.create({
-    id: 'saveBookmark',
-    title: '保存到书签库',
-    contexts: ['page', 'link']
-  });
-});
 
 // 右键菜单点击事件处理
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
