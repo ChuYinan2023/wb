@@ -37,11 +37,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     try {
+      console.log('尝试登录:', { email, passwordLength: password.length });
+
       // 发送登录请求到您的 Web 应用
       const response = await fetch('https://tranquil-marigold-0af3ab.netlify.app/.netlify/functions/login', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          // 添加跨域支持
+          'Access-Control-Allow-Origin': '*'
         },
         body: JSON.stringify({ email, password })
       });
@@ -66,8 +70,8 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error('Login Failed:', result);
       }
     } catch (error) {
-      errorMessage.textContent = '登录出错：' + error.message;
-      console.error('Login Fetch Error:', error);
+      console.error('完整登录错误:', error);
+      errorMessage.textContent = '登录出错：' + (error.message || '未知错误');
     }
   });
 
