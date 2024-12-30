@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     try {
       // 发送登录请求到您的 Web 应用
-      const response = await fetch('/.netlify/functions/login', {
+      const response = await fetch('https://tranquil-marigold-0af3ab.netlify.app/.netlify/functions/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
