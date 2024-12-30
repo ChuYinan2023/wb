@@ -8,14 +8,19 @@ chrome.runtime.onInstalled.addListener(() => {
 });
 
 // 处理右键菜单点击事件
-chrome.contextMenus.onClicked.addListener(async (info, tab) => {
-  try {
-    // 获取用户 token
-    const { user_token } = await chrome.storage.local.get('user_token');
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+  // 使用 Promise 处理异步操作
+  chrome.storage.local.get('user_token').then(({ user_token }) => {
     console.log('右键菜单添加书签 - Token:', user_token);
 
     if (!user_token || !user_token.token) {
       console.error('添加书签失败：未登录');
+      chrome.notifications.create({
+        type: 'basic',
+        iconUrl: 'icon128.png',
+        title: '添加书签失败',
+        message: '请先登录'
+      });
       return;
     }
 
@@ -28,7 +33,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     }
 
     // 直接调用 Netlify Function 添加书签
-    const response = await fetch('https://tranquil-marigold-0af3ab.netlify.app/.netlify/functions/add-bookmark', {
+    fetch('https://tranquil-marigold-0af3ab.netlify.app/.netlify/functions/add-bookmark', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -38,35 +43,43 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
         url: url.startsWith('http') ? url : `https://${url}`,
         tags: []
       })
+    })
+    .then(response => response.json())
+    .then(result => {
+      if (result.success) {
+        console.log('右键菜单添加书签成功');
+        chrome.notifications.create({
+          type: 'basic',
+          iconUrl: 'icon128.png',
+          title: '书签保存成功',
+          message: `已将 ${url} 添加到书签库`
+        });
+      } else {
+        console.error('右键菜单添加书签失败:', result.error);
+        chrome.notifications.create({
+          type: 'basic',
+          iconUrl: 'icon128.png',
+          title: '书签保存失败',
+          message: result.error || '无法添加书签'
+        });
+      }
+    })
+    .catch(error => {
+      console.error('右键菜单添加书签发生错误:', error);
+      chrome.notifications.create({
+        type: 'basic',
+        iconUrl: 'icon128.png',
+        title: '书签保存错误',
+        message: '网络错误，请重试'
+      });
     });
-
-    const result = await response.json();
-
-    if (response.ok) {
-      console.log('右键菜单添加书签成功');
-      // 可以考虑发送桌面通知
-      chrome.notifications.create({
-        type: 'basic',
-        iconUrl: 'icon128.png',
-        title: '书签保存成功',
-        message: `已将 ${url} 添加到书签库`
-      });
-    } else {
-      console.error('右键菜单添加书签失败:', result.error);
-      chrome.notifications.create({
-        type: 'basic',
-        iconUrl: 'icon128.png',
-        title: '书签保存失败',
-        message: result.error || '无法添加书签'
-      });
-    }
-  } catch (error) {
-    console.error('右键菜单添加书签发生错误:', error);
+  }).catch(error => {
+    console.error('获取用户 Token 失败:', error);
     chrome.notifications.create({
       type: 'basic',
       iconUrl: 'icon128.png',
       title: '书签保存错误',
-      message: '网络错误，请重试'
+      message: '无法获取用户信息'
     });
-  }
+  });
 });

@@ -125,7 +125,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const result = await response.json();
       console.log('Add Bookmark - Response Body:', result);
 
-      if (response.ok) {
+      if (result.success) {
         // 保存成功
         errorMessage.style.color = 'green';
         errorMessage.textContent = '书签保存成功！';
@@ -133,17 +133,41 @@ document.addEventListener('DOMContentLoaded', () => {
         // 清空输入框
         urlInput.value = '';
         tagsInput.value = '';
+
+        // 发送桌面通知
+        chrome.notifications.create({
+          type: 'basic',
+          iconUrl: 'icon128.png',
+          title: '书签保存成功',
+          message: `已将 ${url} 添加到书签库`
+        });
       } else {
         // 保存失败
         errorMessage.style.color = 'red';
         errorMessage.textContent = result.error || '书签保存失败';
         console.error('添加书签失败:', result);
+
+        // 发送桌面通知
+        chrome.notifications.create({
+          type: 'basic',
+          iconUrl: 'icon128.png',
+          title: '书签保存失败',
+          message: result.error || '无法添加书签'
+        });
       }
     } catch (error) {
       console.error('添加书签发生错误:', error);
       
       errorMessage.style.color = 'red';
       errorMessage.textContent = '网络错误，请重试';
+
+      // 发送桌面通知
+      chrome.notifications.create({
+        type: 'basic',
+        iconUrl: 'icon128.png',
+        title: '书签保存错误',
+        message: '网络错误，请重试'
+      });
     }
   });
 
