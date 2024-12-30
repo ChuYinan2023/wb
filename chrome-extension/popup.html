@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>BookmarkSync</title>
+  <style>
+    body { 
+      width: 300px; 
+      padding: 10px; 
+      font-family: Arial, sans-serif; 
+    }
+    .section { 
+      display: none; 
+    }
+    input { 
+      width: 100%; 
+      margin: 5px 0; 
+      padding: 5px; 
+    }
+    .error { 
+      color: red; 
+      margin-bottom: 10px; 
+    }
+  </style>
+</head>
+<body>
+  <div id="loginSection" class="section">
+    <h2>登录 BookmarkSync</h2>
+    <input type="email" id="usernameInput" placeholder="邮箱" required>
+    <input type="password" id="passwordInput" placeholder="密码" required>
+    <div id="errorMessage" class="error"></div>
+    <button id="loginButton">登录</button>
+  </div>
+
+  <div id="bookmarkSection" class="section">
+    <h2>添加书签</h2>
+    <p id="userEmail"></p>
+    <input type="url" id="urlInput" placeholder="网址" required>
+    <input type="text" id="tagsInput" placeholder="标签（逗号分隔）">
+    <button id="addButton">保存书签</button>
+    <button id="logoutButton">退出登录</button>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
