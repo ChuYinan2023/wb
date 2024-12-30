@@ -198,10 +198,11 @@ const handler: Handler = async (event, context) => {
     // 打印完整的 decodedToken
     console.warn('🔐 完整的 Token 解码信息:', JSON.stringify(decodedToken, null, 2));
 
+    // 确保 user_id 与 auth.uid() 完全匹配
     const { data, error } = await supabase
       .from('bookmarks')
       .insert({
-        user_id: user.id,  // 强制使用 Supabase 返回的 user.id
+        user_id: decodedToken.sub,  // 使用 decodedToken.sub 代替 user.id
         url: url,
         title: title || '',
         description: description || '',
@@ -217,14 +218,14 @@ const handler: Handler = async (event, context) => {
       errorExists: !!error,
       errorMessage: error?.message,
       errorCode: error?.code,
-      insertedUserId: user.id  // 额外记录插入时使用的用户ID
+      insertedUserId: decodedToken.sub  // 额外记录插入时使用的用户ID
     });
 
     if (error) {
       console.error('插入书签错误:', {
         error,
         bookmarkData: {
-          user_id: user.id,
+          user_id: decodedToken.sub,
           url,
           title,
           description,
@@ -244,7 +245,7 @@ const handler: Handler = async (event, context) => {
           error: '保存书签失败',
           details: error.message,
           code: error.code,
-          suggestion: '请检查数据库权限设置'
+          suggestion: '请检查数据库权限设置或重新登录'
         })
       };
     }
