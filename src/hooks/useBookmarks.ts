@@ -41,7 +41,7 @@ export function useBookmarks() {
     summary?: string
   ) => {
     console.log('🔍 调试：开始添加书签');
-    console.log('🔑 本地存储用户:', user);
+    console.log('🔑 本地存储用户(完整对象):', JSON.stringify(user, null, 2));
     
     if (!user) {
       console.error('❌ 错误：未登录用户');
@@ -51,7 +51,7 @@ export function useBookmarks() {
     try {
       // 获取当前会话用户信息
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      console.log('🔐 会话信息:', sessionData);
+      console.log('🔐 会话信息(完整对象):', JSON.stringify(sessionData, null, 2));
       
       if (sessionError) {
         console.error('❌ 会话错误:', sessionError);
@@ -60,22 +60,31 @@ export function useBookmarks() {
 
       // 额外验证用户ID
       const currentUser = sessionData?.session?.user;
-      console.log('👤 当前认证用户:', currentUser);
+      console.log('👤 当前认证用户(完整对象):', JSON.stringify(currentUser, null, 2));
 
       // 额外打印 auth.uid() 信息
       const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
-      console.log('🆔 supabase.auth.getUser():', authUser);
+      console.log('🆔 supabase.auth.getUser()(完整对象):', JSON.stringify(authUser, null, 2));
       console.log('🆔 supabase.auth.getUser() Error:', authError);
 
-      // 打印所有可能的用户ID
-      console.log('🔑 用户ID对比:', {
-        localUserId: user.id,
-        sessionUserId: currentUser?.id,
-        authUserId: authUser?.id
+      // 打印所有可能的用户ID和详细信息
+      console.log('🔑 用户ID和详细信息对比:', {
+        localUser: {
+          id: user.id,
+          email: user.email
+        },
+        sessionUser: {
+          id: currentUser?.id,
+          email: currentUser?.email
+        },
+        authUser: {
+          id: authUser?.id,
+          email: authUser?.email
+        }
       });
 
       const bookmarkData = {
-        user_id: authUser?.id || currentUser?.id || user.id, // 优先使用最可靠的用户ID
+        user_id: authUser?.id || currentUser?.id || user.id, 
         url,
         title: title || '',
         description,
@@ -85,7 +94,7 @@ export function useBookmarks() {
         created_at: new Date().toISOString()
       };
 
-      console.log('📝 准备插入的书签数据:', bookmarkData);
+      console.log('📝 准备插入的书签数据:', JSON.stringify(bookmarkData, null, 2));
 
       const { data, error } = await supabase
         .from('bookmarks')
