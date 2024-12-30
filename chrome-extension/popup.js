@@ -10,9 +10,47 @@ document.addEventListener('DOMContentLoaded', () => {
   const urlInput = document.getElementById('urlInput');
   const addButton = document.getElementById('addButton');
 
-  // 配置 Netlify Function 的基础 URL
-  const NETLIFY_FUNCTION_BASE_URL = 'https://tranquil-marigold-0af3ab.netlify.app/.netlify/functions';
-  const FUNCTION_NAME = 'add-bookmark';
+  // 从 Chrome 存储中获取 Netlify Function 的基础 URL
+  const getNetlifyFunctionBaseUrl = async () => {
+    const { netlifyFunctionBaseUrl } = await chrome.storage.local.get('netlifyFunctionBaseUrl');
+    return netlifyFunctionBaseUrl || 'https://tranquil-marigold-0af3ab.netlify.app/.netlify/functions';
+  };
+
+  // 获取页面标题
+  const getPageTitle = async (url) => {
+    try {
+      const response = await fetch(`https://tranquil-marigold-0af3ab.netlify.app/.netlify/functions/get-page-title?url=${encodeURIComponent(url)}`);
+      const result = await response.json();
+      return result.title || url;
+    } catch (error) {
+      console.error('获取页面标题失败:', error);
+      return url;
+    }
+  };
+
+  // 获取关键词
+  const getKeywords = async (url) => {
+    try {
+      const response = await fetch(`https://tranquil-marigold-0af3ab.netlify.app/.netlify/functions/extract-keywords?url=${encodeURIComponent(url)}`);
+      const result = await response.json();
+      return result.keywords || [];
+    } catch (error) {
+      console.error('获取关键词失败:', error);
+      return [];
+    }
+  };
+
+  // 获取网站图标
+  const getFavicon = async (url) => {
+    try {
+      const response = await fetch(`https://tranquil-marigold-0af3ab.netlify.app/.netlify/functions/get-favicon?url=${encodeURIComponent(url)}`);
+      const result = await response.json();
+      return result.favicon || null;
+    } catch (error) {
+      console.error('获取网站图标失败:', error);
+      return null;
+    }
+  };
 
   // 检查登录状态
   const checkAuthStatus = async () => {
@@ -85,6 +123,8 @@ document.addEventListener('DOMContentLoaded', () => {
   addButton.addEventListener('click', async () => {
     try {
       const { user_token } = await chrome.storage.local.get('user_token');
+      const NETLIFY_FUNCTION_BASE_URL = await getNetlifyFunctionBaseUrl();
+      const FUNCTION_NAME = 'add-bookmark';
 
       if (!user_token || !user_token.token) {
         errorMessage.textContent = '请先登录';
@@ -98,9 +138,20 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
+      // 获取额外的页面信息
+      const [title, keywords, favicon] = await Promise.all([
+        getPageTitle(url),
+        getKeywords(url),
+        getFavicon(url)
+      ]);
+
       console.log('尝试保存书签:', { 
         url, 
-        tokenPresent: !!user_token.token 
+        title,
+        keywords,
+        favicon,
+        tokenPresent: !!user_token.token,
+        functionBaseUrl: NETLIFY_FUNCTION_BASE_URL
       });
 
       // 直接调用 Netlify Function 添加书签
@@ -115,7 +166,10 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         body: JSON.stringify({
           url: url.startsWith('http') ? url : `https://${url}`,
-          tags: []  // 不传入标签
+          title: title,
+          tags: [],
+          keywords: keywords,
+          favicon: favicon
         })
       });
 
