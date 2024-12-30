@@ -40,28 +40,42 @@ export function useBookmarks() {
     favicon?: string,
     summary?: string
   ) => {
-    console.log(' 调试：开始添加书签');
-    console.log(' 当前用户:', user);
+    console.log('🔍 调试：开始添加书签');
+    console.log('🔑 本地存储用户:', user);
     
     if (!user) {
-      console.error(' 错误：未登录用户');
+      console.error('❌ 错误：未登录用户');
       return null;
     }
 
     try {
+      // 获取当前会话用户信息
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      console.log(' 会话信息:', sessionData);
+      console.log('🔐 会话信息:', sessionData);
       
       if (sessionError) {
-        console.error(' 会话错误:', sessionError);
+        console.error('❌ 会话错误:', sessionError);
         return null;
       }
 
+      // 额外验证用户ID
       const currentUser = sessionData?.session?.user;
-      console.log(' 当前认证用户:', currentUser);
+      console.log('👤 当前认证用户:', currentUser);
+
+      // 额外打印 auth.uid() 信息
+      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+      console.log('🆔 supabase.auth.getUser():', authUser);
+      console.log('🆔 supabase.auth.getUser() Error:', authError);
+
+      // 打印所有可能的用户ID
+      console.log('🔑 用户ID对比:', {
+        localUserId: user.id,
+        sessionUserId: currentUser?.id,
+        authUserId: authUser?.id
+      });
 
       const bookmarkData = {
-        user_id: currentUser?.id || user.id, 
+        user_id: authUser?.id || currentUser?.id || user.id, // 优先使用最可靠的用户ID
         url,
         title: title || '',
         description,
@@ -71,23 +85,23 @@ export function useBookmarks() {
         created_at: new Date().toISOString()
       };
 
-      console.log(' 准备插入的书签数据:', bookmarkData);
+      console.log('📝 准备插入的书签数据:', bookmarkData);
 
       const { data, error } = await supabase
         .from('bookmarks')
         .insert(bookmarkData);
 
       if (error) {
-        console.error(' 插入书签错误:', error);
-        console.error(' 错误详情:', JSON.stringify(error, null, 2));
+        console.error('❌ 插入书签错误:', error);
+        console.error('❌ 错误详情:', JSON.stringify(error, null, 2));
         return null;
       }
 
-      console.log(' 书签添加成功:', data);
+      console.log('✅ 书签添加成功:', data);
       return data;
 
     } catch (catchError) {
-      console.error(' 捕获到未知错误:', catchError);
+      console.error('❌ 捕获到未知错误:', catchError);
       return null;
     }
   };
