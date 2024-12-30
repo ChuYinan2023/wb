@@ -189,7 +189,7 @@ const handler: Handler = async (event, context) => {
     const { data, error } = await supabase
       .from('bookmarks')
       .insert({
-        user_id: user.id,
+        user_id: user.id,  // 确保使用 Supabase 返回的 user.id
         url: url,
         title: title,
         description: description,
@@ -204,14 +204,15 @@ const handler: Handler = async (event, context) => {
       dataExists: !!data,
       errorExists: !!error,
       errorMessage: error?.message,
-      errorCode: error?.code
+      errorCode: error?.code,
+      insertedUserId: user.id  // 额外记录插入时使用的用户ID
     });
 
     if (error) {
       console.error('插入书签错误:', {
         error,
         bookmarkData: {
-          user_id: user.id,
+          user_id: user.id,  // 再次确认 user_id
           url,
           title,
           description,
@@ -221,13 +222,14 @@ const handler: Handler = async (event, context) => {
           summary
         }
       });
+
       return {
         statusCode: 500,
         headers: {
           'Access-Control-Allow-Origin': '*'
         },
-        body: JSON.stringify({ 
-          error: '保存书签失败', 
+        body: JSON.stringify({
+          error: '保存书签失败',
           details: error.message,
           code: error.code,
           suggestion: '请检查数据库权限设置'
@@ -235,16 +237,15 @@ const handler: Handler = async (event, context) => {
       };
     }
 
-    console.log('书签保存成功:', data[0]);
-
+    // 返回成功响应
     return {
       statusCode: 200,
       headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
+        'Access-Control-Allow-Origin': '*',
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        success: true,
+        message: '书签保存成功',
         bookmark: data[0]
       })
     };
