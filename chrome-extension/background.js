@@ -15,10 +15,32 @@ chrome.runtime.onInstalled.addListener(async () => {
   });
 });
 
-// 从 Chrome 存储中获取 Netlify Function 的基础 URL
+// 从 Chrome 存储中获取 Netlify Function 的基础 URL 和用户 Token
 const getNetlifyFunctionBaseUrl = async () => {
-  const { netlifyFunctionBaseUrl } = await chrome.storage.local.get('netlifyFunctionBaseUrl');
-  return netlifyFunctionBaseUrl || 'https://tranquil-marigold-0af3ab.netlify.app/.netlify/functions';
+  try {
+    // 获取 Function Base URL
+    const { netlifyFunctionBaseUrl } = await chrome.storage.local.get('netlifyFunctionBaseUrl');
+    
+    // 获取用户 Token
+    const { user_token } = await chrome.storage.local.get('user_token');
+
+    console.log('%c🔍 获取存储信息', 'color: orange; font-weight: bold', {
+      functionBaseUrl: netlifyFunctionBaseUrl,
+      tokenExists: !!user_token,
+      tokenType: typeof user_token
+    });
+
+    return {
+      token: user_token?.token,
+      netlifyFunctionBaseUrl: netlifyFunctionBaseUrl || 'https://tranquil-marigold-0af3ab.netlify.app/.netlify/functions'
+    };
+  } catch (error) {
+    console.error('%c❌ 获取存储信息失败', 'color: red; font-weight: bold', error);
+    return {
+      token: null,
+      netlifyFunctionBaseUrl: 'https://tranquil-marigold-0af3ab.netlify.app/.netlify/functions'
+    };
+  }
 };
 
 // 获取页面标题
