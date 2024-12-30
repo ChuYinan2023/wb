@@ -79,75 +79,54 @@ const getFavicon = async (url) => {
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   try {
     // 获取用户 token 和 Function Base URL
-    const { user_token } = await chrome.storage.local.get('user_token');
-    const NETLIFY_FUNCTION_BASE_URL = await getNetlifyFunctionBaseUrl();
-    const FUNCTION_NAME = 'add-bookmark';
+    const { token, netlifyFunctionBaseUrl } = await getNetlifyFunctionBaseUrl();
 
-    console.log('保存书签 - 用户 Token 信息:', {
-      tokenExists: !!user_token,
-      tokenType: typeof user_token,
-      tokenKeys: user_token ? Object.keys(user_token) : 'No token'
+    // 调试：打印关键信息
+    console.log('%c🔍 保存书签调试信息', 'color: green; font-weight: bold', {
+      url: info.pageUrl || info.linkUrl,
+      token: token ? '✅ Token存在' : '❌ Token不存在',
+      functionBaseUrl: netlifyFunctionBaseUrl
     });
 
-    if (!user_token || !user_token.token) {
-      console.error('未登录：缺少有效的用户令牌');
-      chrome.notifications.create({
-        type: 'basic',
-        iconUrl: 'icon128.png',
-        title: '未登录',
-        message: '请先登录书签管理器'
-      });
-      return;
-    }
+    const url = info.pageUrl || info.linkUrl;
+    const title = await getPageTitle(url);
+    const keywords = await getKeywords(url);
+    const favicon = await getFavicon(url);
 
-    // 获取要保存的 URL
-    const url = info.linkUrl || info.pageUrl;
-
-    // 获取额外的页面信息
-    const [title, keywords, favicon] = await Promise.all([
-      getPageTitle(url),
-      getKeywords(url),
-      getFavicon(url)
-    ]);
-
-    console.log('尝试保存书签:', { 
-      url, 
+    // 调试：打印附加信息
+    console.log('%c📝 书签详细信息', 'color: blue; font-weight: bold', {
       title,
       keywords,
-      favicon,
-      tokenPresent: !!user_token.token,
-      functionBaseUrl: NETLIFY_FUNCTION_BASE_URL
+      favicon
     });
 
-    // 调用 Netlify Function 添加书签
-    const fullFunctionUrl = `${NETLIFY_FUNCTION_BASE_URL}/${FUNCTION_NAME}`;
-    console.log('Function URL:', fullFunctionUrl);
+    const bookmarkData = {
+      url,
+      title,
+      keywords,
+      favicon
+    };
 
-    const response = await fetch(fullFunctionUrl, {
+    const result = await fetch(`${netlifyFunctionBaseUrl}/add-bookmark`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${user_token.token}`
+        'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify({
-        url: url.startsWith('http') ? url : `https://${url}`,
-        title: title,
-        tags: [],
-        keywords: keywords,
-        favicon: favicon
-      })
+      body: JSON.stringify(bookmarkData)
     });
 
-    console.log('响应状态:', response.status);
-    console.log('响应头:', Object.fromEntries(response.headers.entries()));
+    // 调试：打印服务器响应
+    const responseText = await result.text();
+    console.log('%c🚀 服务器响应', 'color: purple; font-weight: bold', {
+      status: result.status,
+      responseText
+    });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('详细错误内容:', errorText);
-      throw new Error(`HTTP错误! 状态: ${response.status}, 详情: ${errorText}`);
+    if (!result.ok) {
+      throw new Error(responseText);
     }
 
-    const result = await response.json();
     console.log('服务器响应:', result);
 
     // 发送保存成功的通知
@@ -159,7 +138,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     });
 
   } catch (error) {
-    console.error('右键菜单保存书签失败:', error);
+    console.error('%c❌ 右键菜单保存书签失败', 'color: red; font-weight: bold', error);
 
     // 发送保存失败的通知
     chrome.notifications.create({
