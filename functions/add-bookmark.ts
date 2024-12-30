@@ -5,6 +5,11 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || '';
 
+console.log('Supabase 配置:', {
+  url: supabaseUrl ? '✓' : '✗',
+  anonKeyLength: supabaseAnonKey?.length || 0
+});
+
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 interface BookmarkRequest {
@@ -18,6 +23,12 @@ interface BookmarkRequest {
 }
 
 const handler: Handler = async (event, context) => {
+  console.log('收到书签请求:', {
+    method: event.httpMethod,
+    headers: JSON.stringify(event.headers),
+    body: event.body
+  });
+
   // 处理 OPTIONS 请求（用于跨域）
   if (event.httpMethod === 'OPTIONS') {
     return {
@@ -33,6 +44,7 @@ const handler: Handler = async (event, context) => {
 
   // 检查是否是 POST 请求
   if (event.httpMethod !== 'POST') {
+    console.error('无效的 HTTP 方法:', event.httpMethod);
     return {
       statusCode: 405,
       headers: {
@@ -44,7 +56,10 @@ const handler: Handler = async (event, context) => {
 
   // 验证授权
   const authHeader = event.headers.authorization;
+  console.log('授权头:', authHeader);
+
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    console.error('缺少或无效的授权头:', authHeader);
     return {
       statusCode: 401,
       headers: {
@@ -55,10 +70,13 @@ const handler: Handler = async (event, context) => {
   }
 
   const token = authHeader.split(' ')[1];
+  console.log('Token 长度:', token.length);
 
   try {
     // 解析请求体
     const requestBody: BookmarkRequest = JSON.parse(event.body || '{}');
+    console.log('解析后的请求体:', JSON.stringify(requestBody, null, 2));
+
     const { 
       url, 
       tags = [], 
@@ -70,6 +88,7 @@ const handler: Handler = async (event, context) => {
     } = requestBody;
 
     if (!url) {
+      console.error('URL 为空');
       return {
         statusCode: 400,
         headers: {
@@ -80,15 +99,29 @@ const handler: Handler = async (event, context) => {
     }
 
     // 获取用户信息（假设令牌中包含用户 ID）
+    console.log('尝试获取用户信息...');
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
 
+    console.log('用户获取结果:', {
+      userExists: !!user,
+      userEmail: user?.email,
+      authError: authError ? authError.message : '无错误'
+    });
+
     if (authError || !user) {
+      console.error('无效的用户令牌:', {
+        authError,
+        userExists: !!user
+      });
       return {
         statusCode: 401,
         headers: {
           'Access-Control-Allow-Origin': '*'
         },
-        body: JSON.stringify({ error: '无效的用户令牌' })
+        body: JSON.stringify({ 
+          error: '无效的用户令牌', 
+          details: authError?.message || '未知错误' 
+        })
       };
     }
 
@@ -96,6 +129,7 @@ const handler: Handler = async (event, context) => {
     const defaultThumbnail = `https://www.google.com/s2/favicons?domain=${new URL(url).hostname}&sz=32`;
 
     // 插入书签
+    console.log('尝试插入书签...');
     const { data, error } = await supabase
       .from('bookmarks')
       .insert({
@@ -110,8 +144,26 @@ const handler: Handler = async (event, context) => {
       })
       .select();
 
+    console.log('书签插入结果:', {
+      dataExists: !!data,
+      errorExists: !!error,
+      errorMessage: error?.message
+    });
+
     if (error) {
-      console.error('插入书签错误:', error);
+      console.error('插入书签错误:', {
+        error,
+        bookmarkData: {
+          user_id: user.id,
+          url,
+          title,
+          description,
+          tags,
+          thumbnail: favicon || defaultThumbnail,
+          keywords,
+          summary
+        }
+      });
       return {
         statusCode: 500,
         headers: {
@@ -124,6 +176,8 @@ const handler: Handler = async (event, context) => {
         })
       };
     }
+
+    console.log('书签保存成功:', data[0]);
 
     return {
       statusCode: 200,

@@ -19,7 +19,13 @@ document.addEventListener('DOMContentLoaded', () => {
   // 获取页面标题
   const getPageTitle = async (url) => {
     try {
-      const response = await fetch(`https://tranquil-marigold-0af3ab.netlify.app/.netlify/functions/get-page-title?url=${encodeURIComponent(url)}`);
+      const response = await fetch(`https://tranquil-marigold-0af3ab.netlify.app/.netlify/functions/get-page-title`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ url })
+      });
       const result = await response.json();
       return result.title || url;
     } catch (error) {
@@ -31,7 +37,13 @@ document.addEventListener('DOMContentLoaded', () => {
   // 获取关键词
   const getKeywords = async (url) => {
     try {
-      const response = await fetch(`https://tranquil-marigold-0af3ab.netlify.app/.netlify/functions/extract-keywords?url=${encodeURIComponent(url)}`);
+      const response = await fetch(`https://tranquil-marigold-0af3ab.netlify.app/.netlify/functions/extract-keywords`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ url })
+      });
       const result = await response.json();
       return result.keywords || [];
     } catch (error) {
@@ -43,7 +55,13 @@ document.addEventListener('DOMContentLoaded', () => {
   // 获取网站图标
   const getFavicon = async (url) => {
     try {
-      const response = await fetch(`https://tranquil-marigold-0af3ab.netlify.app/.netlify/functions/get-favicon?url=${encodeURIComponent(url)}`);
+      const response = await fetch(`https://tranquil-marigold-0af3ab.netlify.app/.netlify/functions/get-favicon`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ url })
+      });
       const result = await response.json();
       return result.favicon || null;
     } catch (error) {

@@ -7,7 +7,13 @@ const getNetlifyFunctionBaseUrl = async () => {
 // 获取页面标题
 const getPageTitle = async (url) => {
   try {
-    const response = await fetch(`https://tranquil-marigold-0af3ab.netlify.app/.netlify/functions/get-page-title?url=${encodeURIComponent(url)}`);
+    const response = await fetch(`https://tranquil-marigold-0af3ab.netlify.app/.netlify/functions/get-page-title`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ url })
+    });
     const result = await response.json();
     return result.title || url;
   } catch (error) {
@@ -19,7 +25,13 @@ const getPageTitle = async (url) => {
 // 获取关键词
 const getKeywords = async (url) => {
   try {
-    const response = await fetch(`https://tranquil-marigold-0af3ab.netlify.app/.netlify/functions/extract-keywords?url=${encodeURIComponent(url)}`);
+    const response = await fetch(`https://tranquil-marigold-0af3ab.netlify.app/.netlify/functions/extract-keywords`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ url })
+    });
     const result = await response.json();
     return result.keywords || [];
   } catch (error) {
@@ -31,7 +43,13 @@ const getKeywords = async (url) => {
 // 获取网站图标
 const getFavicon = async (url) => {
   try {
-    const response = await fetch(`https://tranquil-marigold-0af3ab.netlify.app/.netlify/functions/get-favicon?url=${encodeURIComponent(url)}`);
+    const response = await fetch(`https://tranquil-marigold-0af3ab.netlify.app/.netlify/functions/get-favicon`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ url })
+    });
     const result = await response.json();
     return result.favicon || null;
   } catch (error) {
@@ -57,7 +75,14 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     const NETLIFY_FUNCTION_BASE_URL = await getNetlifyFunctionBaseUrl();
     const FUNCTION_NAME = 'add-bookmark';
 
+    console.log('保存书签 - 用户 Token 信息:', {
+      tokenExists: !!user_token,
+      tokenType: typeof user_token,
+      tokenKeys: user_token ? Object.keys(user_token) : 'No token'
+    });
+
     if (!user_token || !user_token.token) {
+      console.error('未登录：缺少有效的用户令牌');
       chrome.notifications.create({
         type: 'basic',
         iconUrl: 'icon128.png',
