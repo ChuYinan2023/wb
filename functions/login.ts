@@ -39,8 +39,16 @@ const handler: Handler = async (event, context) => {
       password
     });
 
-    console.log('Supabase Login Result:', {
-      data: data ? 'Received' : 'No Data',
+    console.log('Supabase Login Detailed Result:', {
+      user: data?.user ? {
+        id: data.user.id,
+        email: data.user.email,
+        confirmed_at: data.user.confirmed_at
+      } : 'No User',
+      session: data?.session ? {
+        access_token: data.session.access_token ? '✓' : '✗',
+        expires_at: data.session.expires_at
+      } : 'No Session',
       error: error ? error.message : 'No Error'
     });
 
@@ -63,6 +71,24 @@ const handler: Handler = async (event, context) => {
           success: false, 
           message: error.message || '登录失败',
           details: error.details
+        }) 
+      };
+    }
+
+    // 确保有效的用户和 session
+    if (!data.user || !data.session) {
+      console.error('登录失败：无效的用户或会话');
+      return { 
+        statusCode: 401, 
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type'
+        },
+        body: JSON.stringify({ 
+          success: false, 
+          message: '登录失败：无效的用户或会话' 
         }) 
       };
     }
