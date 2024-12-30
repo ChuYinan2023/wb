@@ -32,9 +32,23 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       return;
     }
 
-    // 使用实际的 Web 应用地址
+    // 构建更详细的 URL
+    const addBookmarkUrl = new URL('https://tranquil-marigold-0af3ab.netlify.app/add');
+    addBookmarkUrl.searchParams.set('url', request.url);
+    
+    // 添加标签
+    if (request.tags && request.tags.length > 0) {
+      addBookmarkUrl.searchParams.set('tags', request.tags.join(','));
+    }
+    
+    // 添加 token
+    if (request.token) {
+      addBookmarkUrl.searchParams.set('token', request.token);
+    }
+
+    // 打开添加书签页面
     chrome.tabs.create({ 
-      url: `https://tranquil-marigold-0af3ab.netlify.app/add?url=${encodeURIComponent(request.url)}&tags=${encodeURIComponent(request.tags || '')}&token=${encodeURIComponent(request.token || '')}`
+      url: addBookmarkUrl.toString()
     }, (tab) => {
       console.log('已打开添加书签页面:', tab);
     });
