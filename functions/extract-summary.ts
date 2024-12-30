@@ -1,7 +1,7 @@
 import { Handler } from '@netlify/functions';
 import axios from 'axios';
-import cheerio from 'cheerio';
-import ZhipuAI from 'zhipuai';
+import * as cheerio from 'cheerio';
+import { ZhipuAI } from 'zhipuai';
 
 const headers = {
   'Access-Control-Allow-Origin': '*',
