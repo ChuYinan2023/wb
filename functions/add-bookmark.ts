@@ -196,6 +196,12 @@ const handler: Handler = async (event, context) => {
       authHeaderLength: authHeader?.length
     });
 
+    // 额外检查 Supabase 客户端配置
+    console.warn('🌐 Supabase 客户端配置:', {
+      url: supabase.supabaseUrl,
+      anonKeyLength: supabase.supabaseAnonKey?.length
+    });
+
     // 生成默认缩略图
     const defaultThumbnail = `https://www.google.com/s2/favicons?domain=${new URL(url).hostname}&sz=32`;
 
@@ -213,25 +219,16 @@ const handler: Handler = async (event, context) => {
     // 打印完整的 decodedToken
     console.warn('🔐 完整的 Token 解码信息:', JSON.stringify(decodedToken, null, 2));
 
-    // 打印 Supabase 客户端信息
-    console.warn('🌐 Supabase 客户端配置:', {
-      url: supabase.supabaseUrl,
-      anonKeyLength: supabase.supabaseAnonKey?.length
+    // 尝试直接使用 auth.uid()
+    const { data, error } = await supabase.rpc('insert_bookmark', {
+      p_url: url,
+      p_title: title || '',
+      p_description: description || '',
+      p_tags: tags || [],
+      p_thumbnail: favicon || defaultThumbnail,
+      p_keywords: keywords.length > 0 ? keywords : null,
+      p_summary: summary || ''
     });
-
-    const { data, error } = await supabase
-      .from('bookmarks')
-      .insert({
-        user_id: decodedToken.sub,  // 使用字符串类型的 sub
-        url: url,
-        title: title || '',
-        description: description || '',
-        tags: tags || [],
-        thumbnail: favicon || defaultThumbnail,
-        keywords: keywords.length > 0 ? keywords : null,
-        summary: summary || ''
-      })
-      .select();
 
     console.log('书签插入结果:', {
       dataExists: !!data,
@@ -245,7 +242,6 @@ const handler: Handler = async (event, context) => {
       console.error('插入书签错误:', {
         error,
         bookmarkData: {
-          user_id: decodedToken.sub,
           url,
           title,
           description,
@@ -285,7 +281,7 @@ const handler: Handler = async (event, context) => {
       },
       body: JSON.stringify({
         message: '书签保存成功',
-        bookmark: data[0]
+        bookmark: data
       })
     };
 
