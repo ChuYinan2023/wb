@@ -100,25 +100,44 @@ document.addEventListener('DOMContentLoaded', () => {
         tokenLength: user_token.token.length 
       });
 
-      if (url) {
-        chrome.runtime.sendMessage({
-          action: 'addBookmark',
-          url: url,
-          tags: tags,
-          token: user_token.token
-        }, (response) => {
-          console.log('Add Bookmark - Message Send Response:', response);
-        });
-
-        // 关闭弹窗
-        window.close();
-      } else {
-        console.error('添加书签失败：URL为空');
+      if (!url) {
         errorMessage.textContent = '请输入有效的URL';
+        return;
+      }
+
+      // 直接调用 Netlify Function 添加书签
+      const response = await fetch('https://tranquil-marigold-0af3ab.netlify.app/.netlify/functions/add-bookmark', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user_token.token}`
+        },
+        body: JSON.stringify({
+          url: url.startsWith('http') ? url : `https://${url}`,
+          tags: tags
+        })
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        // 保存成功
+        errorMessage.style.color = 'green';
+        errorMessage.textContent = '书签保存成功！';
+        
+        // 清空输入框
+        urlInput.value = '';
+        tagsInput.value = '';
+      } else {
+        // 保存失败
+        errorMessage.style.color = 'red';
+        errorMessage.textContent = result.error || '书签保存失败';
       }
     } catch (error) {
       console.error('添加书签发生错误:', error);
-      errorMessage.textContent = '添加书签出错：' + error.message;
+      
+      errorMessage.style.color = 'red';
+      errorMessage.textContent = '网络错误，请重试';
     }
   });
 
