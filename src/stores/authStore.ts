@@ -16,7 +16,6 @@ export const useAuthStore = create<AuthState>((set) => ({
   loading: true,
   signIn: async (email: string, password: string) => {
     try {
-      // 增加详细的登录日志
       console.log('🔐 开始登录:', email);
       
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -29,8 +28,19 @@ export const useAuthStore = create<AuthState>((set) => ({
         throw error;
       }
 
-      console.log('✅ 登录成功:', data);
-      
+      console.log('✅ 登录成功，完整认证数据:', JSON.stringify(data, null, 2));
+
+      // 打印 Token 详细信息
+      if (data.session) {
+        console.log('🔑 Token 信息:', {
+          accessToken: data.session.access_token ? '✅ 存在' : '❌ 不存在',
+          tokenType: data.session.token_type,
+          expiresIn: data.session.expires_in,
+          expiresAt: new Date(data.session.expires_at * 1000).toLocaleString(),
+          userId: data.session.user?.id
+        });
+      }
+
       // 额外验证用户信息
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       
@@ -39,7 +49,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         throw userError;
       }
 
-      console.log('👤 当前登录用户:', user);
+      console.log('👤 当前登录用户:', JSON.stringify(user, null, 2));
       
       set({ user, loading: false });
     } catch (error) {

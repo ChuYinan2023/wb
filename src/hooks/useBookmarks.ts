@@ -53,6 +53,18 @@ export function useBookmarks() {
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
       console.log('🔐 会话信息(完整对象):', JSON.stringify(sessionData, null, 2));
       
+      // 额外打印 Token 信息
+      const session = sessionData?.session;
+      if (session) {
+        console.log('🔑 当前会话 Token 信息:', {
+          accessTokenExists: !!session.access_token,
+          tokenType: session.token_type,
+          expiresIn: session.expires_in,
+          expiresAt: new Date(session.expires_at * 1000).toLocaleString(),
+          sessionUserId: session.user?.id
+        });
+      }
+      
       if (sessionError) {
         console.error('❌ 会话错误:', sessionError);
         return null;
