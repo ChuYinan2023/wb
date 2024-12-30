@@ -1,10 +1,15 @@
 import { Handler } from '@netlify/functions';
 import { createClient } from '@supabase/supabase-js';
 
+console.log('Supabase URL:', process.env.VITE_SUPABASE_URL);
+console.log('Supabase Anon Key Length:', process.env.VITE_SUPABASE_ANON_KEY?.length);
+
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL || '', 
   process.env.VITE_SUPABASE_ANON_KEY || ''
 );
+
+console.log('Supabase Client Created');
 
 const handler: Handler = async (event, context) => {
   // 只处理 POST 请求
@@ -34,12 +39,30 @@ const handler: Handler = async (event, context) => {
       password
     });
 
+    console.log('Supabase Login Result:', {
+      data: data ? 'Received' : 'No Data',
+      error: error ? error.message : 'No Error'
+    });
+
     if (error) {
+      console.error('Supabase Login Error:', {
+        message: error.message,
+        status: error.status,
+        details: error.details
+      });
+
       return { 
         statusCode: 401, 
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type'
+        },
         body: JSON.stringify({ 
           success: false, 
-          message: error.message || '登录失败' 
+          message: error.message || '登录失败',
+          details: error.details
         }) 
       };
     }
