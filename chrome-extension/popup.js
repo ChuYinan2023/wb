@@ -84,6 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
       console.log('Add Bookmark - Token Data:', user_token);
 
       if (!user_token || !user_token.token) {
+        errorMessage.style.color = 'red';
         errorMessage.textContent = '请先登录';
         console.error('添加书签失败：未登录');
         return;
@@ -101,6 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       if (!url) {
+        errorMessage.style.color = 'red';
         errorMessage.textContent = '请输入有效的URL';
         return;
       }
@@ -118,7 +120,10 @@ document.addEventListener('DOMContentLoaded', () => {
         })
       });
 
+      console.log('Add Bookmark - Response Status:', response.status);
+
       const result = await response.json();
+      console.log('Add Bookmark - Response Body:', result);
 
       if (response.ok) {
         // 保存成功
@@ -132,6 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // 保存失败
         errorMessage.style.color = 'red';
         errorMessage.textContent = result.error || '书签保存失败';
+        console.error('添加书签失败:', result);
       }
     } catch (error) {
       console.error('添加书签发生错误:', error);
