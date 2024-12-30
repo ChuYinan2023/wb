@@ -121,6 +121,13 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       console.log('Add Bookmark - Response Status:', response.status);
+      console.log('Add Bookmark - Response Headers:', Object.fromEntries(response.headers.entries()));
+
+      // 检查响应状态
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP错误! 状态: ${response.status}, 详情: ${errorText}`);
+      }
 
       const result = await response.json();
       console.log('Add Bookmark - Response Body:', result);
@@ -140,6 +147,10 @@ document.addEventListener('DOMContentLoaded', () => {
           iconUrl: 'icon128.png',
           title: '书签保存成功',
           message: `已将 ${url} 添加到书签库`
+        }, (notificationId) => {
+          if (chrome.runtime.lastError) {
+            console.error('创建通知失败:', chrome.runtime.lastError);
+          }
         });
       } else {
         // 保存失败
@@ -153,20 +164,33 @@ document.addEventListener('DOMContentLoaded', () => {
           iconUrl: 'icon128.png',
           title: '书签保存失败',
           message: result.error || '无法添加书签'
+        }, (notificationId) => {
+          if (chrome.runtime.lastError) {
+            console.error('创建通知失败:', chrome.runtime.lastError);
+          }
         });
       }
     } catch (error) {
       console.error('添加书签发生错误:', error);
+      console.error('错误详细信息:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+      });
       
       errorMessage.style.color = 'red';
-      errorMessage.textContent = '网络错误，请重试';
+      errorMessage.textContent = `网络错误：${error.message || '请重试'}`;
 
       // 发送桌面通知
       chrome.notifications.create({
         type: 'basic',
         iconUrl: 'icon128.png',
         title: '书签保存错误',
-        message: '网络错误，请重试'
+        message: `网络错误：${error.message || '请重试'}`
+      }, (notificationId) => {
+        if (chrome.runtime.lastError) {
+          console.error('创建通知失败:', chrome.runtime.lastError);
+        }
       });
     }
   });
