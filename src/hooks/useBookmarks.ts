@@ -40,10 +40,12 @@ export function useBookmarks() {
     favicon?: string,
     summary?: string
   ) => {
-    console.log('🔍 调试：开始添加书签');
+    // 使用 window.console 确保日志被正确输出
+    window.console.log('🔍 调试：开始添加书签');
+    window.console.warn('🚨 用户对象:', user);
   
     if (!user) {
-      console.error('❌ 错误：未登录用户');
+      window.console.error('❌ 错误：未登录用户');
       return null;
     }
 
@@ -51,8 +53,10 @@ export function useBookmarks() {
       // 获取当前会话用户信息
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
     
+      window.console.warn('🔐 会话信息:', sessionData);
+    
       if (sessionError) {
-        console.error('❌ 会话错误:', sessionError);
+        window.console.error('❌ 会话错误:', sessionError);
         return null;
       }
 
@@ -61,10 +65,10 @@ export function useBookmarks() {
 
       // 额外打印 auth.uid() 信息
       const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
-      console.log('🆔 supabase.auth.getUser() Error:', authError);
+      window.console.warn('🆔 supabase.auth.getUser() Error:', authError);
 
-      // 使用带颜色的控制台日志
-      console.log('%c🔑 用户ID对比', 'color: blue; font-weight: bold; font-size: 16px', {
+      // 使用警告级别的日志，增加可见性
+      window.console.warn('%c🔑 用户ID对比', 'color: red; font-weight: bold; font-size: 16px', {
         localUserId: user?.id,
         sessionUserId: currentUser?.id,
         authUserId: authUser?.id
@@ -81,23 +85,23 @@ export function useBookmarks() {
         created_at: new Date().toISOString()
       };
 
-      console.log('📝 准备插入的书签数据:', bookmarkData);
+      window.console.warn('📝 准备插入的书签数据:', bookmarkData);
 
       const { data, error } = await supabase
         .from('bookmarks')
         .insert(bookmarkData);
 
       if (error) {
-        console.error('❌ 插入书签错误:', error);
-        console.error('❌ 错误详情:', JSON.stringify(error, null, 2));
+        window.console.error('❌ 插入书签错误:', error);
+        window.console.error('❌ 错误详情:', JSON.stringify(error, null, 2));
         return null;
       }
 
-      console.log('✅ 书签添加成功:', data);
+      window.console.log('✅ 书签添加成功:', data);
       return data;
 
     } catch (catchError) {
-      console.error('❌ 捕获到未知错误:', catchError);
+      window.console.error('❌ 捕获到未知错误:', catchError);
       return null;
     }
   };
