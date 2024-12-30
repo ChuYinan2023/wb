@@ -10,6 +10,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const urlInput = document.getElementById('urlInput');
   const addButton = document.getElementById('addButton');
 
+  // 配置 Netlify Function 的基础 URL
+  const NETLIFY_FUNCTION_BASE_URL = 'https://tranquil-marigold-0af3ab.netlify.app/.netlify/functions';
+  const FUNCTION_NAME = 'add-bookmark';
+
   // 检查登录状态
   const checkAuthStatus = async () => {
     const { user_token } = await chrome.storage.local.get('user_token');
@@ -77,9 +81,6 @@ document.addEventListener('DOMContentLoaded', () => {
     await checkAuthStatus();
   });
 
-  // 配置 Netlify Function 的基础 URL
-  const NETLIFY_FUNCTION_BASE_URL = 'https://tranquil-marigold-0af3ab.netlify.app/.netlify/functions';
-
   // 添加书签
   addButton.addEventListener('click', async () => {
     try {
@@ -97,10 +98,16 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      // 直接调用 Netlify Function 添加书签
-      const functionUrl = `${NETLIFY_FUNCTION_BASE_URL}/add-bookmark`;
+      console.log('尝试保存书签:', { 
+        url, 
+        tokenPresent: !!user_token.token 
+      });
 
-      const response = await fetch(functionUrl, {
+      // 直接调用 Netlify Function 添加书签
+      const fullFunctionUrl = `${NETLIFY_FUNCTION_BASE_URL}/${FUNCTION_NAME}`;
+      console.log('Function URL:', fullFunctionUrl);
+
+      const response = await fetch(fullFunctionUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -112,12 +119,17 @@ document.addEventListener('DOMContentLoaded', () => {
         })
       });
 
+      console.log('响应状态:', response.status);
+      console.log('响应头:', Object.fromEntries(response.headers.entries()));
+
       if (!response.ok) {
         const errorText = await response.text();
+        console.error('详细错误内容:', errorText);
         throw new Error(`HTTP错误! 状态: ${response.status}, 详情: ${errorText}`);
       }
 
       const result = await response.json();
+      console.log('服务器响应:', result);
 
       if (result.success) {
         errorMessage.style.color = 'green';
@@ -130,6 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
         errorMessage.textContent = result.error || '书签保存失败';
       }
     } catch (error) {
+      console.error('保存书签失败:', error);
       errorMessage.style.color = 'red';
       errorMessage.textContent = `保存书签错误：${error.message || '请重试'}`;
     }

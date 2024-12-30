@@ -18,7 +18,6 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     const { user_token } = await chrome.storage.local.get('user_token');
 
     if (!user_token || !user_token.token) {
-      // 如果未登录，可以发送通知或打开登录页面
       chrome.notifications.create({
         type: 'basic',
         iconUrl: 'icon128.png',
@@ -31,8 +30,16 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     // 获取要保存的 URL
     const url = info.linkUrl || info.pageUrl;
 
+    console.log('尝试保存书签:', { 
+      url, 
+      tokenPresent: !!user_token.token 
+    });
+
     // 调用 Netlify Function 添加书签
-    const response = await fetch('https://tranquil-marigold-0af3ab.netlify.app/.netlify/functions/add-bookmark', {
+    const fullFunctionUrl = `${NETLIFY_FUNCTION_BASE_URL}/${FUNCTION_NAME}`;
+    console.log('Function URL:', fullFunctionUrl);
+
+    const response = await fetch(fullFunctionUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -44,12 +51,17 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
       })
     });
 
+    console.log('响应状态:', response.status);
+    console.log('响应头:', Object.fromEntries(response.headers.entries()));
+
     if (!response.ok) {
       const errorText = await response.text();
+      console.error('详细错误内容:', errorText);
       throw new Error(`HTTP错误! 状态: ${response.status}, 详情: ${errorText}`);
     }
 
     const result = await response.json();
+    console.log('服务器响应:', result);
 
     // 发送保存成功的通知
     chrome.notifications.create({
@@ -60,6 +72,8 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     });
 
   } catch (error) {
+    console.error('右键菜单保存书签失败:', error);
+
     // 发送保存失败的通知
     chrome.notifications.create({
       type: 'basic',
@@ -67,7 +81,5 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
       title: '书签保存失败',
       message: `无法保存书签：${error.message}`
     });
-
-    console.error('右键菜单保存书签失败:', error);
   }
 });
