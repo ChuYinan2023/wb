@@ -79,27 +79,46 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 添加书签
   addButton.addEventListener('click', async () => {
-    const tokenData = await chrome.storage.local.get('user_token');
-    if (!tokenData || !tokenData.token) {
-      errorMessage.textContent = '请先登录';
-      return;
-    }
+    try {
+      const { user_token } = await chrome.storage.local.get('user_token');
+      console.log('Add Bookmark - Token Data:', user_token);
 
-    const url = urlInput.value.trim();
-    const tags = tagsInput.value.split(',')
-      .map(tag => tag.trim())
-      .filter(tag => tag !== '');
+      if (!user_token || !user_token.token) {
+        errorMessage.textContent = '请先登录';
+        console.error('添加书签失败：未登录');
+        return;
+      }
 
-    if (url) {
-      chrome.runtime.sendMessage({
-        action: 'addBookmark',
-        url: url,
-        tags: tags,
-        token: tokenData.token
+      const url = urlInput.value.trim();
+      const tags = tagsInput.value.split(',')
+        .map(tag => tag.trim())
+        .filter(tag => tag !== '');
+
+      console.log('Add Bookmark - Details:', { 
+        url, 
+        tags, 
+        tokenLength: user_token.token.length 
       });
 
-      // 关闭弹窗
-      window.close();
+      if (url) {
+        chrome.runtime.sendMessage({
+          action: 'addBookmark',
+          url: url,
+          tags: tags,
+          token: user_token.token
+        }, (response) => {
+          console.log('Add Bookmark - Message Send Response:', response);
+        });
+
+        // 关闭弹窗
+        window.close();
+      } else {
+        console.error('添加书签失败：URL为空');
+        errorMessage.textContent = '请输入有效的URL';
+      }
+    } catch (error) {
+      console.error('添加书签发生错误:', error);
+      errorMessage.textContent = '添加书签出错：' + error.message;
     }
   });
 
