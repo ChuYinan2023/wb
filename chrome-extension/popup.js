@@ -44,7 +44,10 @@ document.addEventListener('DOMContentLoaded', () => {
         body: JSON.stringify({ email, password })
       });
 
+      console.log('Login Response Status:', response.status);
+      
       const result = await response.json();
+      console.log('Login Response Body:', result);
 
       if (result.success) {
         // 保存用户 token 和邮箱
@@ -57,10 +60,12 @@ document.addEventListener('DOMContentLoaded', () => {
         
         await checkAuthStatus();
       } else {
-        errorMessage.textContent = result.message || '登录失败';
+        errorMessage.textContent = result.message || '登录失败：未知错误';
+        console.error('Login Failed:', result);
       }
     } catch (error) {
       errorMessage.textContent = '登录出错：' + error.message;
+      console.error('Login Fetch Error:', error);
     }
   });
 
