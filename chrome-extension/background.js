@@ -32,9 +32,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       return;
     }
 
+    // 确保 URL 是完整的
+    const fullUrl = request.url.startsWith('http') 
+      ? request.url 
+      : `https://${request.url}`;
+
     // 构建更详细的 URL
     const addBookmarkUrl = new URL('https://tranquil-marigold-0af3ab.netlify.app/add');
-    addBookmarkUrl.searchParams.set('url', request.url);
+    addBookmarkUrl.searchParams.set('url', fullUrl);
     
     // 添加标签
     if (request.tags && request.tags.length > 0) {
