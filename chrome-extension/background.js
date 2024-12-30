@@ -18,11 +18,25 @@ chrome.runtime.onInstalled.addListener(async () => {
 // 从 Chrome 存储中获取 Netlify Function 的基础 URL 和用户 Token
 const getNetlifyFunctionBaseUrl = async () => {
   try {
+    // 获取所有存储的信息
+    const allStorage = await chrome.storage.local.get(null);
+    console.log('%c🔍 Chrome 存储信息', 'color: orange; font-weight: bold', {
+      keys: Object.keys(allStorage),
+      user_token: allStorage.user_token ? '✅ 存在' : '❌ 不存在',
+      netlifyFunctionBaseUrl: allStorage.netlifyFunctionBaseUrl || '❌ 未找到'
+    });
+
     // 获取 Function Base URL
     const { netlifyFunctionBaseUrl } = await chrome.storage.local.get('netlifyFunctionBaseUrl');
     
     // 获取用户 Token
     const { user_token } = await chrome.storage.local.get('user_token');
+
+    console.log('%c🔐 Token 详细信息', 'color: blue; font-weight: bold', {
+      tokenType: typeof user_token,
+      tokenKeys: user_token ? Object.keys(user_token) : '❌ Token为空',
+      tokenLength: user_token?.token ? user_token.token.length : '❌ Token长度为0'
+    });
 
     console.log('%c🔍 获取存储信息', 'color: orange; font-weight: bold', {
       functionBaseUrl: netlifyFunctionBaseUrl,
