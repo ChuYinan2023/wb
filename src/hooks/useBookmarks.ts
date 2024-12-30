@@ -41,11 +41,7 @@ export function useBookmarks() {
     summary?: string
   ) => {
     console.log('🔍 调试：开始添加书签');
-    console.log('🔑 本地存储用户:', {
-      id: user?.id,
-      email: user?.email
-    });
-    
+  
     if (!user) {
       console.error('❌ 错误：未登录用户');
       return null;
@@ -54,14 +50,7 @@ export function useBookmarks() {
     try {
       // 获取当前会话用户信息
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      console.log('🔐 会话信息:', {
-        session: sessionData?.session ? '✅ 存在' : '❌ 不存在',
-        user: sessionData?.session?.user ? {
-          id: sessionData.session.user.id,
-          email: sessionData.session.user.email
-        } : '❌ 用户不存在'
-      });
-      
+    
       if (sessionError) {
         console.error('❌ 会话错误:', sessionError);
         return null;
@@ -69,21 +58,13 @@ export function useBookmarks() {
 
       // 额外验证用户ID
       const currentUser = sessionData?.session?.user;
-      console.log('👤 当前认证用户:', {
-        id: currentUser?.id,
-        email: currentUser?.email
-      });
 
       // 额外打印 auth.uid() 信息
       const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
-      console.log('🆔 supabase.auth.getUser():', {
-        id: authUser?.id,
-        email: authUser?.email
-      });
       console.log('🆔 supabase.auth.getUser() Error:', authError);
 
-      // 打印所有可能的用户ID
-      console.log('🔑 用户ID对比:', {
+      // 使用带颜色的控制台日志
+      console.log('%c🔑 用户ID对比', 'color: blue; font-weight: bold; font-size: 16px', {
         localUserId: user?.id,
         sessionUserId: currentUser?.id,
         authUserId: authUser?.id
