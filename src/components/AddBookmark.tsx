@@ -199,51 +199,94 @@ export function AddBookmark({ onAdd, bookmarks }: AddBookmarkProps) {
     }
   }, [bookmarks]);
 
+  useEffect(() => {
+    // 处理从 URL 参数传递的书签信息
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlFromParam = urlParams.get('url');
+    const tagsFromParam = urlParams.get('tags');
+    const tokenFromParam = urlParams.get('token');
+
+    console.log('URL 参数信息:', {
+      url: urlFromParam,
+      tags: tagsFromParam,
+      tokenProvided: !!tokenFromParam
+    });
+
+    if (urlFromParam) {
+      // 自动填充 URL
+      setUrl(urlFromParam);
+
+      // 处理标签
+      if (tagsFromParam) {
+        const parsedTags = tagsFromParam.split(',')
+          .map(tag => tag.trim())
+          .filter(tag => tag !== '');
+        setTags(parsedTags);
+      }
+
+      // 尝试获取页面信息
+      const fullUrl = urlFromParam.startsWith('http') 
+        ? urlFromParam 
+        : `https://${urlFromParam}`;
+      
+      fetchPageTitle(fullUrl);
+      fetchFavicon(fullUrl);
+    }
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
     setError('');
 
-    if (!isValidUrl(url)) {
-      setError('请输入有效的网页链接');
-      return;
-    }
-
-    setIsLoading(true);
-
     try {
+      // 验证 URL
+      if (!isValidUrl(url)) {
+        setError('请输入有效的网址');
+        setIsLoading(false);
+        return;
+      }
+
+      // 处理 URL
       const fullUrl = url.startsWith('http') ? url : `https://${url}`;
 
-      // 并行获取标题、关键词、摘要和 favicon
-      const [extractedTitle, extractedKeywords, extractedSummary, extractedFavicon] = await Promise.all([
-        fetchPageTitle(fullUrl),
-        extractKeywords(fullUrl),
-        extractSummary(fullUrl),
-        fetchFavicon(fullUrl)
-      ]);
+      // 获取额外信息
+      const pageTitle = await fetchPageTitle(fullUrl);
+      await fetchFavicon(fullUrl);
+      const extractedKeywords = await extractKeywords(fullUrl);
 
-      // 使用获取的数据调用 onAdd
+      // 打印调试信息
+      console.log('准备添加书签:', {
+        url: fullUrl,
+        tags,
+        title: pageTitle || fullUrl,
+        summary,
+        keywords: extractedKeywords,
+        favicon
+      });
+
+      // 添加书签
       onAdd(
         fullUrl, 
         tags, 
-        extractedTitle || title || fullUrl, 
-        '', 
+        pageTitle || fullUrl, 
+        summary, 
         extractedKeywords, 
-        favicon, 
-        extractedSummary
+        favicon || undefined, 
+        summary
       );
 
       // 重置表单
       setUrl('');
       setTags([]);
       setTagInput('');
-      setTitle(null);
-      setFavicon(null);
-      setSummary('');
-      setKeywords([]);
-    } catch (err) {
-      console.error('添加书签失败:', err);
-      setError('添加书签时发生错误');
-    } finally {
+      setIsLoading(false);
+
+      // 关闭窗口
+      window.close();
+    } catch (error) {
+      console.error('添加书签错误:', error);
+      setError('添加书签失败');
       setIsLoading(false);
     }
   };
