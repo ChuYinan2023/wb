@@ -13,11 +13,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 检查登录状态
   const checkAuthStatus = async () => {
-    const token = await chrome.storage.local.get('user_token');
-    if (token && token.email) {
+    const { user_token } = await chrome.storage.local.get('user_token');
+    console.log('Auth Status Check:', user_token);
+    
+    if (user_token && user_token.email) {
       loginSection.style.display = 'none';
       bookmarkSection.style.display = 'block';
-      userEmail.textContent = `欢迎，${token.email}`;
+      userEmail.textContent = `欢迎，${user_token.email}`;
     } else {
       loginSection.style.display = 'block';
       bookmarkSection.style.display = 'none';
