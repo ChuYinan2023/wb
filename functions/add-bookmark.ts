@@ -181,6 +181,21 @@ const handler: Handler = async (event, context) => {
       currentUserId: user.id
     });
 
+    // 额外打印完整的请求信息
+    console.warn('🔍 完整请求详情:', {
+      headers: JSON.stringify(event.headers, null, 2),
+      body: event.body,
+      method: event.httpMethod
+    });
+
+    // 打印授权头的详细信息
+    const authHeader = event.headers.authorization || event.headers.Authorization;
+    console.warn('🔐 授权头信息:', {
+      authHeaderExists: !!authHeader,
+      authHeaderType: typeof authHeader,
+      authHeaderLength: authHeader?.length
+    });
+
     // 生成默认缩略图
     const defaultThumbnail = `https://www.google.com/s2/favicons?domain=${new URL(url).hostname}&sz=32`;
 
@@ -198,7 +213,12 @@ const handler: Handler = async (event, context) => {
     // 打印完整的 decodedToken
     console.warn('🔐 完整的 Token 解码信息:', JSON.stringify(decodedToken, null, 2));
 
-    // 确保 user_id 与 auth.uid() 完全匹配
+    // 打印 Supabase 客户端信息
+    console.warn('🌐 Supabase 客户端配置:', {
+      url: supabase.supabaseUrl,
+      anonKeyLength: supabase.supabaseAnonKey?.length
+    });
+
     const { data, error } = await supabase
       .from('bookmarks')
       .insert({
@@ -249,7 +269,8 @@ const handler: Handler = async (event, context) => {
           // 额外诊断信息
           diagnostics: {
             userId: decodedToken.sub,
-            tokenType: typeof decodedToken.sub
+            tokenType: typeof decodedToken.sub,
+            authHeader: !!authHeader
           }
         })
       };

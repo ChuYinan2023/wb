@@ -121,7 +121,10 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     // 获取用户 token 和 Function Base URL
     const { token, netlifyFunctionBaseUrl } = await getNetlifyFunctionBaseUrl();
 
-    console.log('%c🔑 获取的用户 Token', 'color: blue; font-weight: bold', token);
+    console.log('%c🔑 获取的用户 Token', 'color: blue; font-weight: bold', {
+      tokenExists: !!token,
+      tokenLength: token?.length
+    });
     console.log('%c🌐 Function Base URL', 'color: green; font-weight: bold', netlifyFunctionBaseUrl);
 
     // 如果没有 Token，阻止保存
@@ -152,7 +155,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer ${token}`  // 确保大小写正确
       },
       body: JSON.stringify(bookmarkData)
     });
