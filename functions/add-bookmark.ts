@@ -121,16 +121,18 @@ const handler: Handler = async (event, context) => {
       fullToken: token ? `Token长度: ${token.length}` : '❌ Token为空'
     });
 
-    // 如果 JWT 验证失败，尝试直接解析 Token
+    // 如果 JWT 验证失败，尝试手动解码
     if (jwtError || !jwtData.user) {
       try {
-        // 手动解码 JWT（注意：这只是一个简单的演示，实际应用中应使用更安全的方法）
+        // 手动解码 JWT 的 payload
         const tokenParts = token.split('.');
         if (tokenParts.length === 3) {
-          const payload = JSON.parse(atob(tokenParts[1]));
-          console.log('手动解析 Token:', {
+          const payload = JSON.parse(Buffer.from(tokenParts[1], 'base64').toString('utf-8'));
+          console.log('手动解析 Token Payload:', {
             sub: payload.sub,
-            email: payload.email
+            email: payload.email,
+            exp: payload.exp,
+            iat: payload.iat
           });
         }
       } catch (decodeError) {
@@ -157,38 +159,33 @@ const handler: Handler = async (event, context) => {
       };
     }
 
-    // 生成默认缩略图
-    const defaultThumbnail = `https://www.google.com/s2/favicons?domain=${new URL(url).hostname}&sz=32`;
+    // 额外的调试日志
+    console.log('用户详细信息:', {
+      userId: user.id,
+      email: user.email,
+      confirmedAt: user.confirmed_at,
+      lastSignInAt: user.last_sign_in_at
+    });
 
-    // 插入书签
-    console.log('尝试插入书签...');
-    
-    // 检查用户是否有权限
+    // 检查用户权限
     const { data: permissionCheck, error: permissionError } = await supabase
       .from('bookmarks')
       .select('id')
       .eq('user_id', user.id)
       .limit(1);
 
-    console.log('权限检查结果:', {
-      permissionCheck,
-      permissionError
+    console.log('用户权限检查:', {
+      permissionCheckExists: !!permissionCheck,
+      permissionError: permissionError?.message,
+      currentUserId: user.id
     });
 
-    if (permissionError) {
-      console.error('权限检查错误:', permissionError);
-      return {
-        statusCode: 403,
-        headers: {
-          'Access-Control-Allow-Origin': '*'
-        },
-        body: JSON.stringify({ 
-          error: '权限不足', 
-          details: permissionError.message 
-        })
-      };
-    }
+    // 生成默认缩略图
+    const defaultThumbnail = `https://www.google.com/s2/favicons?domain=${new URL(url).hostname}&sz=32`;
 
+    // 插入书签
+    console.log('尝试插入书签...');
+    
     const { data, error } = await supabase
       .from('bookmarks')
       .insert({
