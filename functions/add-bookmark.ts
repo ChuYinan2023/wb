@@ -202,7 +202,7 @@ const handler: Handler = async (event, context) => {
     const { data, error } = await supabase
       .from('bookmarks')
       .insert({
-        user_id: decodedToken.sub,  // 使用 decodedToken.sub 代替 user.id
+        user_id: decodedToken.sub,  // 使用字符串类型的 sub
         url: url,
         title: title || '',
         description: description || '',
@@ -245,7 +245,12 @@ const handler: Handler = async (event, context) => {
           error: '保存书签失败',
           details: error.message,
           code: error.code,
-          suggestion: '请检查数据库权限设置或重新登录'
+          suggestion: '请检查数据库权限设置或重新登录',
+          // 额外诊断信息
+          diagnostics: {
+            userId: decodedToken.sub,
+            tokenType: typeof decodedToken.sub
+          }
         })
       };
     }
