@@ -10,7 +10,18 @@ console.log('Supabase 配置:', {
   anonKeyLength: supabaseAnonKey?.length || 0
 });
 
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// 创建 Supabase 客户端，启用详细日志
+const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  db: {
+    schema: 'public',
+  },
+  auth: {
+    persistSession: false
+  },
+  global: {
+    headers: { 'x-my-custom-header': 'my-app-name' },
+  },
+});
 
 interface BookmarkRequest {
   url: string;
@@ -105,6 +116,7 @@ const handler: Handler = async (event, context) => {
     console.log('用户获取结果:', {
       userExists: !!user,
       userEmail: user?.email,
+      userID: user?.id,
       authError: authError ? authError.message : '无错误'
     });
 
@@ -130,6 +142,33 @@ const handler: Handler = async (event, context) => {
 
     // 插入书签
     console.log('尝试插入书签...');
+    
+    // 检查用户是否有权限
+    const { data: permissionCheck, error: permissionError } = await supabase
+      .from('bookmarks')
+      .select('id')
+      .eq('user_id', user.id)
+      .limit(1);
+
+    console.log('权限检查结果:', {
+      permissionCheck,
+      permissionError
+    });
+
+    if (permissionError) {
+      console.error('权限检查错误:', permissionError);
+      return {
+        statusCode: 403,
+        headers: {
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify({ 
+          error: '权限不足', 
+          details: permissionError.message 
+        })
+      };
+    }
+
     const { data, error } = await supabase
       .from('bookmarks')
       .insert({
@@ -147,7 +186,8 @@ const handler: Handler = async (event, context) => {
     console.log('书签插入结果:', {
       dataExists: !!data,
       errorExists: !!error,
-      errorMessage: error?.message
+      errorMessage: error?.message,
+      errorCode: error?.code
     });
 
     if (error) {
@@ -172,7 +212,8 @@ const handler: Handler = async (event, context) => {
         body: JSON.stringify({ 
           error: '保存书签失败', 
           details: error.message,
-          code: error.code
+          code: error.code,
+          suggestion: '请检查数据库权限设置'
         })
       };
     }

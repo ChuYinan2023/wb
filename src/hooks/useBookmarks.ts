@@ -40,79 +40,55 @@ export function useBookmarks() {
     favicon?: string,
     summary?: string
   ) => {
+    console.log(' 调试：开始添加书签');
+    console.log(' 当前用户:', user);
+    
     if (!user) {
-      console.error('用户未登录');
-      alert('请先登录');
-      return;
+      console.error(' 错误：未登录用户');
+      return null;
     }
 
     try {
-      // 检查网络状态
-      if (!navigator.onLine) {
-        console.error('网络离线');
-        alert('网络连接已断开');
-        return;
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      console.log(' 会话信息:', sessionData);
+      
+      if (sessionError) {
+        console.error(' 会话错误:', sessionError);
+        return null;
       }
 
-      // 检查 Supabase 配置
-      if (!supabase) {
-        console.error('Supabase 客户端未正确初始化');
-        alert('Supabase 初始化失败');
-        return;
-      }
+      const currentUser = sessionData?.session?.user;
+      console.log(' 当前认证用户:', currentUser);
 
-      console.log('添加书签详细信息:', { 
-        url, 
-        tags, 
-        title, 
-        description, 
-        keywords, 
-        favicon, 
-        summary 
-      });
-
-      const newBookmark = {
-        user_id: user.id,
+      const bookmarkData = {
+        user_id: currentUser?.id || user.id, 
         url,
-        title: title || url,
-        description: description || '',
+        title: title || '',
+        description,
         tags,
-        thumbnail: favicon || `https://www.google.com/s2/favicons?domain=${new URL(url).hostname}&sz=32`,
-        keywords: keywords && keywords.length > 0 ? keywords : null,
-        summary: summary || ''
+        keywords,
+        thumbnail: favicon,
+        created_at: new Date().toISOString()
       };
 
-      console.log('准备插入的书签数据:', newBookmark);
-      
+      console.log(' 准备插入的书签数据:', bookmarkData);
+
       const { data, error } = await supabase
         .from('bookmarks')
-        .insert(newBookmark)
-        .select();
+        .insert(bookmarkData);
 
       if (error) {
-        console.error('添加书签错误详情:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code
-        });
-        
-        // 根据错误类型提供更具体的错误提示
-        if (error.code === '42501') {
-          alert('权限不足：无法添加书签。请检查登录状态和权限。');
-        } else {
-          alert(`添加书签失败：${error.message}`);
-        }
-        
-        throw error;
+        console.error(' 插入书签错误:', error);
+        console.error(' 错误详情:', JSON.stringify(error, null, 2));
+        return null;
       }
 
-      console.log('书签添加成功:', data);
-      
-      await fetchBookmarks();
-    } catch (error) {
-      console.error('添加书签失败:', error);
-      alert(`添加书签失败: ${error instanceof Error ? error.message : '未知错误'}`);
+      console.log(' 书签添加成功:', data);
+      return data;
+
+    } catch (catchError) {
+      console.error(' 捕获到未知错误:', catchError);
+      return null;
     }
   };
 
