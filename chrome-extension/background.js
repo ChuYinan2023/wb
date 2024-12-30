@@ -21,11 +21,22 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 // 处理从弹窗发送的消息
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'addBookmark') {
-    console.log('准备添加书签:', request.url);
+    console.log('准备添加书签:', {
+      url: request.url,
+      tags: request.tags,
+      tokenProvided: !!request.token
+    });
     
+    if (!request.url) {
+      console.error('添加书签失败：缺少 URL');
+      return;
+    }
+
     // 使用实际的 Web 应用地址
     chrome.tabs.create({ 
       url: `https://tranquil-marigold-0af3ab.netlify.app/add?url=${encodeURIComponent(request.url)}&tags=${encodeURIComponent(request.tags || '')}&token=${encodeURIComponent(request.token || '')}`
+    }, (tab) => {
+      console.log('已打开添加书签页面:', tab);
     });
   }
 });
