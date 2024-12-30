@@ -111,18 +111,38 @@ const handler: Handler = async (event, context) => {
 
     // 获取用户信息（假设令牌中包含用户 ID）
     console.log('尝试获取用户信息...');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-
-    console.log('用户获取结果:', {
-      userExists: !!user,
-      userEmail: user?.email,
-      userID: user?.id,
-      authError: authError ? authError.message : '无错误'
+    
+    // 尝试使用 verifyJWT 方法
+    const { data: jwtData, error: jwtError } = await supabase.auth.getUser(token);
+    
+    console.log('JWT 验证结果:', {
+      jwtData: jwtData ? '✅ 存在' : '❌ 不存在',
+      jwtError: jwtError?.message || '无错误',
+      fullToken: token ? `Token长度: ${token.length}` : '❌ Token为空'
     });
 
-    if (authError || !user) {
-      console.error('无效的用户令牌:', {
-        authError,
+    // 如果 JWT 验证失败，尝试直接解析 Token
+    if (jwtError || !jwtData.user) {
+      try {
+        // 手动解码 JWT（注意：这只是一个简单的演示，实际应用中应使用更安全的方法）
+        const tokenParts = token.split('.');
+        if (tokenParts.length === 3) {
+          const payload = JSON.parse(atob(tokenParts[1]));
+          console.log('手动解析 Token:', {
+            sub: payload.sub,
+            email: payload.email
+          });
+        }
+      } catch (decodeError) {
+        console.error('Token 解析错误:', decodeError);
+      }
+    }
+
+    const user = jwtData?.user;
+
+    if (!user) {
+      console.error('无法获取用户信息', {
+        jwtError,
         userExists: !!user
       });
       return {
@@ -131,8 +151,8 @@ const handler: Handler = async (event, context) => {
           'Access-Control-Allow-Origin': '*'
         },
         body: JSON.stringify({ 
-          error: '无效的用户令牌', 
-          details: authError?.message || '未知错误' 
+          error: '无法验证用户身份', 
+          details: jwtError?.message || '未知错误' 
         })
       };
     }
