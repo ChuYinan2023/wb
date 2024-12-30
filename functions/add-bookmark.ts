@@ -141,6 +141,7 @@ const handler: Handler = async (event, context) => {
     }
 
     const user = jwtData?.user;
+    const decodedToken = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString('utf-8'));
 
     if (!user) {
       console.error('无法获取用户信息', {
@@ -186,17 +187,25 @@ const handler: Handler = async (event, context) => {
     // 插入书签
     console.log('尝试插入书签...');
     
+    // 额外打印用户信息以排查问题
+    console.warn('📋 插入书签时的用户信息:', {
+      userId: user.id,
+      email: user.email,
+      tokenUserId: decodedToken?.sub,
+      tokenEmail: decodedToken?.email
+    });
+
     const { data, error } = await supabase
       .from('bookmarks')
       .insert({
-        user_id: user.id,  // 确保使用 Supabase 返回的 user.id
+        user_id: decodedToken?.sub || user.id,  // 优先使用 Token 中的 sub
         url: url,
-        title: title,
-        description: description,
-        tags: tags,
+        title: title || '',
+        description: description || '',
+        tags: tags || [],
         thumbnail: favicon || defaultThumbnail,
         keywords: keywords.length > 0 ? keywords : null,
-        summary: summary
+        summary: summary || ''
       })
       .select();
 
@@ -205,14 +214,14 @@ const handler: Handler = async (event, context) => {
       errorExists: !!error,
       errorMessage: error?.message,
       errorCode: error?.code,
-      insertedUserId: user.id  // 额外记录插入时使用的用户ID
+      insertedUserId: decodedToken?.sub || user.id  // 额外记录插入时使用的用户ID
     });
 
     if (error) {
       console.error('插入书签错误:', {
         error,
         bookmarkData: {
-          user_id: user.id,  // 再次确认 user_id
+          user_id: decodedToken?.sub || user.id,
           url,
           title,
           description,

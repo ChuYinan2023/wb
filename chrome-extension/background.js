@@ -1,3 +1,10 @@
+// 引入 Supabase 客户端
+const { createClient } = require('@supabase/supabase-js');
+const supabase = createClient(
+  'https://jbqwjdvtgocxdftyyrm.supabase.co', 
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpicXdqdnRnb2N4ZGZ0eXlybSIsInJvbGVzIjpbImFub24iXSwiaWF0IjoxNzA1NjY4MjQ3LCJleHAiOjIwMjEyNDQyNDd9.Qb3Qm7Ld1kGcFHKkCqH-aNJYcRQxmRoUZDjxqLqKqtI'
+);
+
 // 初始化 Netlify Function 基础 URL
 chrome.runtime.onInstalled.addListener(async () => {
   // 你可以从环境变量、配置文件或其他方式获取正确的 URL
@@ -49,7 +56,7 @@ const getNetlifyFunctionBaseUrl = async () => {
       netlifyFunctionBaseUrl: netlifyFunctionBaseUrl || 'https://tranquil-marigold-0af3ab.netlify.app/.netlify/functions'
     };
   } catch (error) {
-    console.error('%c❌ 获取存储信息失败', 'color: red; font-weight: bold', error);
+    console.error('获取存储信息失败:', error);
     return {
       token: null,
       netlifyFunctionBaseUrl: 'https://tranquil-marigold-0af3ab.netlify.app/.netlify/functions'
@@ -115,18 +122,10 @@ const getFavicon = async (url) => {
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   try {
     // 获取用户 token 和 Function Base URL
-    const { token, functionBaseUrl } = await new Promise((resolve, reject) => {
-      chrome.storage.sync.get(['userToken', 'netlifyFunctionBaseUrl'], (result) => {
-        if (chrome.runtime.lastError) {
-          reject(chrome.runtime.lastError);
-        } else {
-          resolve(result);
-        }
-      });
-    });
+    const { token, netlifyFunctionBaseUrl } = await getNetlifyFunctionBaseUrl();
 
     console.log('%c🔑 获取的用户 Token', 'color: blue; font-weight: bold', token);
-    console.log('%c🌐 Function Base URL', 'color: green; font-weight: bold', functionBaseUrl);
+    console.log('%c🌐 Function Base URL', 'color: green; font-weight: bold', netlifyFunctionBaseUrl);
 
     // 如果没有 Token，阻止保存
     if (!token) {
@@ -152,7 +151,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     console.log('%c📝 准备发送的书签数据', 'color: orange; font-weight: bold', bookmarkData);
 
     // 使用 Fetch API 发送书签
-    const result = await fetch(`${functionBaseUrl}/add-bookmark`, {
+    const result = await fetch(`${netlifyFunctionBaseUrl}/add-bookmark`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
