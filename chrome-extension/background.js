@@ -1,7 +1,10 @@
+<<<<<<< HEAD
 // 配置 Netlify Function 的基础 URL
 const NETLIFY_FUNCTION_BASE_URL = 'https://tranquil-marigold-0af3ab.netlify.app/.netlify/functions';
 const FUNCTION_NAME = 'add-bookmark';
 
+=======
+>>>>>>> parent of c3703f3 (继续保存错误的bug)
 // 创建右键菜单
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
@@ -57,6 +60,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     }
 
     // 直接调用 Netlify Function 添加书签
+<<<<<<< HEAD
     const functionUrl = `${NETLIFY_FUNCTION_BASE_URL}/${FUNCTION_NAME}`;
     console.log('调用的完整 Function URL:', functionUrl);
 
@@ -68,6 +72,9 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     });
 
     fetch(functionUrl, {
+=======
+    fetch('https://tranquil-marigold-0af3ab.netlify.app/.netlify/functions/add-bookmark', {
+>>>>>>> parent of c3703f3 (继续保存错误的bug)
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

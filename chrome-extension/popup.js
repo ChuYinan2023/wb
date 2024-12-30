@@ -81,6 +81,7 @@ document.addEventListener('DOMContentLoaded', () => {
     await checkAuthStatus();
   });
 
+<<<<<<< HEAD
   // 配置 Netlify Function 的基础 URL
   const NETLIFY_FUNCTION_BASE_URL = 'https://tranquil-marigold-0af3ab.netlify.app/.netlify/functions';
   const FUNCTION_NAME = 'add-bookmark';
@@ -90,6 +91,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const currentTab = tabs[0];
     urlInput.value = currentTab.url;
 
+=======
+  // 添加书签
+  addButton.addEventListener('click', async () => {
+>>>>>>> parent of c3703f3 (继续保存错误的bug)
     try {
       // 获取页面标题
       const titleResponse = await fetch(
@@ -127,6 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
         favicon = faviconData.favicon;
       }
 
+<<<<<<< HEAD
       // 提取关键词
       const keywordsResponse = await fetch(
         import.meta.env.DEV 
@@ -143,6 +149,28 @@ document.addEventListener('DOMContentLoaded', () => {
       if (keywordsResponse.ok) {
         const keywordsData = await keywordsResponse.json();
         keywords = keywordsData.keywords || [];
+=======
+      // 直接调用 Netlify Function 添加书签
+      const response = await fetch('https://tranquil-marigold-0af3ab.netlify.app/.netlify/functions/add-bookmark', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user_token.token}`
+        },
+        body: JSON.stringify({
+          url: url.startsWith('http') ? url : `https://${url}`,
+          tags: tags
+        })
+      });
+
+      console.log('Add Bookmark - Response Status:', response.status);
+      console.log('Add Bookmark - Response Headers:', Object.fromEntries(response.headers.entries()));
+
+      // 检查响应状态
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP错误! 状态: ${response.status}, 详情: ${errorText}`);
+>>>>>>> parent of c3703f3 (继续保存错误的bug)
       }
 
       // 添加书签
