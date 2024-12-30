@@ -1,9 +1,6 @@
-// 引入 Supabase 客户端
-const { createClient } = require('@supabase/supabase-js');
-const supabase = createClient(
-  'https://jbqwjdvtgocxdftyyrm.supabase.co', 
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpicXdqdnRnb2N4ZGZ0eXlybSIsInJvbGVzIjpbImFub24iXSwiaWF0IjoxNzA1NjY4MjQ3LCJleHAiOjIwMjEyNDQyNDd9.Qb3Qm7Ld1kGcFHKkCqH-aNJYcRQxmRoUZDjxqLqKqtI'
-);
+// Supabase 配置
+const SUPABASE_URL = 'https://jbqwjdvtgocxdftyyrm.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpicXdqdnRnb2N4ZGZ0eXlybSIsInJvbGVzIjpbImFub24iXSwiaWF0IjoxNzA1NjY4MjQ3LCJleHAiOjIwMjEyNDQyNDd9.Qb3Qm7Ld1kGcFHKkCqH-aNJYcRQxmRoUZDjxqLqKqtI';
 
 // 初始化 Netlify Function 基础 URL
 chrome.runtime.onInstalled.addListener(async () => {
@@ -168,10 +165,6 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     });
 
     if (!result.ok) {
-      // 尝试获取最新的用户会话信息
-      const { data: { user }, error } = await supabase.auth.getUser();
-      console.warn('%c🆔 重新获取用户信息', 'color: red; font-weight: bold', { user, error });
-
       throw new Error(responseText);
     }
 
