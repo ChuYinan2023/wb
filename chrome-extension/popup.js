@@ -1,8 +1,81 @@
 document.addEventListener('DOMContentLoaded', () => {
+  const loginSection = document.getElementById('loginSection');
+  const bookmarkSection = document.getElementById('bookmarkSection');
+  const loginButton = document.getElementById('loginButton');
+  const logoutButton = document.getElementById('logoutButton');
+  const emailInput = document.getElementById('usernameInput');
+  const passwordInput = document.getElementById('passwordInput');
+  const errorMessage = document.getElementById('errorMessage');
+  const userEmail = document.getElementById('userEmail');
   const urlInput = document.getElementById('urlInput');
   const tagsInput = document.getElementById('tagsInput');
   const addButton = document.getElementById('addButton');
-  const errorMessage = document.getElementById('errorMessage');
+
+  // 检查登录状态
+  const checkAuthStatus = async () => {
+    const { user_token } = await chrome.storage.local.get('user_token');
+    console.log('Auth Status Check:', user_token);
+    
+    if (user_token && user_token.email) {
+      loginSection.style.display = 'none';
+      bookmarkSection.style.display = 'block';
+      userEmail.textContent = `欢迎，${user_token.email}`;
+    } else {
+      loginSection.style.display = 'block';
+      bookmarkSection.style.display = 'none';
+    }
+  };
+
+  // 登录
+  loginButton.addEventListener('click', async () => {
+    const email = emailInput.value.trim();
+    const password = passwordInput.value.trim();
+
+    if (!email || !password) {
+      errorMessage.textContent = '请输入邮箱和密码';
+      return;
+    }
+
+    try {
+      // 发送登录请求到您的 Web 应用
+      const response = await fetch('https://tranquil-marigold-0af3ab.netlify.app/.netlify/functions/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email, password })
+      });
+
+      console.log('Login Response Status:', response.status);
+      
+      const result = await response.json();
+      console.log('Login Response Body:', result);
+
+      if (result.success) {
+        // 保存用户 token 和邮箱
+        await chrome.storage.local.set({
+          'user_token': {
+            token: result.token,
+            email: email
+          }
+        });
+        
+        await checkAuthStatus();
+      } else {
+        errorMessage.textContent = result.message || '登录失败：未知错误';
+        console.error('Login Failed:', result);
+      }
+    } catch (error) {
+      errorMessage.textContent = '登录出错：' + error.message;
+      console.error('Login Fetch Error:', error);
+    }
+  });
+
+  // 退出登录
+  logoutButton.addEventListener('click', async () => {
+    await chrome.storage.local.remove('user_token');
+    await checkAuthStatus();
+  });
 
   // 配置 Netlify Function 的基础 URL
   const NETLIFY_FUNCTION_BASE_URL = 'https://tranquil-marigold-0af3ab.netlify.app/.netlify/functions';
@@ -148,4 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
       errorMessage.textContent = '获取页面信息失败';
     }
   });
+
+  // 初始化时检查登录状态
+  checkAuthStatus();
 });
